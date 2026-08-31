@@ -1,0 +1,63 @@
+[tools]
+# Language Runtimes
+node = "latest"
+bun = "latest"
+deno = "latest"
+go = "latest"
+rust = "latest"
+uv = "latest"
+shfmt = "latest"
+ruff = "latest"
+# Secret Management
+fnox = "latest"
+age = "latest"
+1password = "latest"
+doppler = "latest"
+# Dev Tools
+tmux = "latest"
+herdr = "latest"
+gh = "latest"
+just = "latest"
+yq = "latest"
+fd = "latest"
+neovim = "latest"
+ripgrep = "latest"
+fzf = "latest"
+bat = "latest"
+eza = "latest"
+# Agent Harnesses
+codex = "latest"
+claude = "latest"
+"github:thehumanworks/tny" = "latest"
+
+[env]
+IS_SANDBOX = "1"
+EDITOR = "nvim"
+_.path = ["/root/.local/bin","/root/.local/share/mise/shims","/usr/bin","/usr/sbin"]
+
+[bootstrap.mise_shell_activate]
+bash = true
+
+[bootstrap.user]
+login_shell = "/bin/bash"
+
+[dotfiles]
+"~/.claude/settings.json" = { source = ".claude/settings.json", mode = "symlink" }
+"~/.claude.json" = { source = ".claude.json", mode = "symlink" }
+"~/.codex/config.toml" = { source = ".codex/config.toml", mode = "symlink" }
+"/root/.bashrc/fnox" = { block = '''
+eval "$(fnox activate bash)"
+'''}
+"/root/.bash_profile/fnox" = { block = '''
+eval "$(fnox activate bash)"
+'''}
+
+[shell_alias]
+codex = "fnox run -- codex --yolo"
+claude = "fnox run -- claude --dangerously-skip-permissions"
+git = "fnox run -- git"
+gh = "fnox run -- gh"
+
+[settings]
+minimum_release_age = "0"
+experimental = true

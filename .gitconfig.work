@@ -1,0 +1,14 @@
+[user]
+  name = Tomas Roda
+  email = rodat@leadforensics.com
+[init]
+  defaultBranch = main
+[push]
+  autoSetupRemote = true
+[pull]
+  rebase = false
+[filter "lfs"]
+  clean = git-lfs clean -- %f
+  smudge = git-lfs smudge -- %f
+  process = git-lfs filter-process
+  required = true
