@@ -1,0 +1,16 @@
+# Replaces /root/.config/fnox/config.toml. op:// references resolve at shell
+# start via the fnox activate hooks; sandboxes need the 1password Modal
+# secret (OP_SERVICE_ACCOUNT_TOKEN).
+default_provider = "op"
+
+[providers.op]
+type = "1password"
+
+[secrets]
+GH_TOKEN = { provider = "op", value = "op://vault/github/token" }
+TAILSCALE_AUTHKEY = { provider = "op", value = "op://vault/tailscale/authkey" }
+CLAUDE_CODE_OAUTH_TOKEN = { provider = "op", value = "op://vault/claude/oauth/token" }
+# The bootstrap task bakes AIPROXY_BASE_URL into codex's aiproxy provider;
+# AIPROXY_API_KEY is read at runtime via the provider's env_key.
+AIPROXY_BASE_URL = { provider = "op", value = "op://vault/aiproxy/api/url" }
+AIPROXY_API_KEY = { provider = "op", value = "op://vault/aiproxy/api/key" }

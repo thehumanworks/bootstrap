@@ -1,0 +1,71 @@
+model = "gpt-5.6-sol"
+model_provider = "aiproxy"
+model_reasoning_effort = "high"
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+model_verbosity = "low"
+model_reasoning_summary = "concise"
+personality = "pragmatic"
+approvals_reviewer = "user"
+suppress_unstable_features_warning = true
+model_context_window = 1000000
+model_auto_compact_token_limit = 900000
+service_tier = "fast"
+
+[features]
+memories = true
+js_repl = false
+multi_agent_v2 = true
+standalone_web_search = true
+realtime_conversation = true
+local_thread_store_compression = true
+mcp_2026_07_28 = true
+executed_tool_call_metadata = true
+executor_capability_discovery = true
+concurrent_reasoning_summaries = true
+code_mode = true
+apply_patch_streaming_events = true
+artifact = true
+default_mode_request_user_input = true
+deferred_executor = true
+secret_auth_storage = true
+prevent_idle_sleep = true
+deferred_tool_world_state = true
+code_mode_buffered_exec = true
+runtime_metrics = true
+non_prefixed_mcp_tool_names = true
+guardian_reuse_parent_compaction = true
+background_paginated_rollout_migration = true
+apply_patch_preserve_line_endings = true
+code_mode_interrupt = true
+retain_client_developer_messages = true
+current_time_reminder = true
+send_async_message = true
+chronicle = false
+cwd_relative_turn_diffs = true
+transcript_v2 = true
+unified_image_budget = true
+step_model_switching = true
+code_mode_prewarm = true
+shell_snapshot_v2 = true
+local_thread_store_shared_compression = true
+skip_host_skill_discovery = true
+
+# Same models as codex, served through aiproxy (responses API).
+[model_providers.aiproxy]
+name = "aiproxy"
+base_url = "https://aiproxy.up.railway.app/v1"
+env_key = "AIPROXY_API_KEY"
+wire_api = "responses"
+
+[memories]
+generate_memories = true
+use_memories = true
+
+[tui]
+theme = "sublime-snazzy"
+status_line = ["model-with-reasoning", "context-remaining", "context-window-size", "current-dir"]
+status_line_use_colors = true
+
+[projects."/__modal/volumes/vo-rGGTEE5RYJUYWE89kixIWK"]
+trust_level = "trusted"
