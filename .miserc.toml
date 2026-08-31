@@ -1,0 +1,2 @@
+# Use the dev profile unless another environment is selected with -E/--env.
+env = ["dev"]

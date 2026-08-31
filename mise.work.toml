@@ -1,0 +1,10 @@
+[env]
+GH_HOST = "leadforensics.ghe.com"
+
+[dotfiles]
+"~/.config/fnox/config.toml" = { source = "fnox.work.toml", mode = "symlink" }
+"~/.gitconfig" = { source = ".gitconfig.work", mode = "copy" }
+
+[bootstrap.hooks.final]
+description = "Configure work GitHub credentials"
+run = "fnox run -- gh auth setup-git --hostname leadforensics.ghe.com"

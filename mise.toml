@@ -42,7 +42,6 @@ bash = true
 login_shell = "/bin/bash"
 
 [dotfiles]
-"~/.config/fnox/config.toml" = { source = "fnox.toml", mode = "symlink" }
 "~/.claude/settings.json" = { source = ".claude/settings.json", mode = "symlink" }
 "~/.claude.json" = { source = ".claude.json", mode = "symlink" }
 "~/.codex/config.toml" = { source = ".codex/config.toml", mode = "symlink" }
@@ -52,11 +51,12 @@ eval "$(fnox activate bash)"
 "/root/.bash_profile/fnox" = { block = '''
 eval "$(fnox activate bash)"
 '''}
-"~/.gitconfig" = { source = ".gitconfig", mode = "copy" }
 
-[bootstrap.hooks.final]
-description = "First-run sandbox setup"
-run = "fnox run -- gh auth setup-git"
+[shell_alias]
+codex = "fnox run -- codex --yolo"
+claude = "fnox run -- claude --dangerously-skip-permissions"
+git = "fnox run -- git"
+gh = "fnox run -- gh"
 
 [settings]
 minimum_release_age = "0"

@@ -1,0 +1,7 @@
+[dotfiles]
+"~/.config/fnox/config.toml" = { source = "fnox.toml", mode = "symlink" }
+"~/.gitconfig" = { source = ".gitconfig", mode = "copy" }
+
+[bootstrap.hooks.final]
+description = "Configure dev GitHub credentials"
+run = "fnox run -- gh auth setup-git --hostname github.com"
