@@ -14,7 +14,6 @@ age = "latest"
 1password = "latest"
 doppler = "latest"
 # Dev Tools
-fnox = "latest"
 tmux = "latest"
 herdr = "latest"
 gh = "latest"
