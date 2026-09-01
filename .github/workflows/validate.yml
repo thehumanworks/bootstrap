@@ -20,17 +20,19 @@ jobs:
         with:
           persist-credentials: false
       - name: Prepare validation tool directory
-        run: mkdir -p "$RUNNER_TEMP/mise-validate"
+        run: |
+          mkdir -p "$RUNNER_TEMP/mise-validate"
+          printf '%s\n' \
+            '[tools]' \
+            'fnox = "1.34.1"' \
+            'shellcheck = "0.11.0"' \
+            'shfmt = "3.14.0"' \
+            >"$RUNNER_TEMP/mise-validate/mise.toml"
       - uses: jdx/mise-action@v4
         with:
           version: 2026.8.16
           cache: false
           working_directory: ${{ runner.temp }}/mise-validate
-          mise_toml: |
-            [tools]
-            fnox = "1.34.1"
-            shellcheck = "0.11.0"
-            shfmt = "3.12.0"
       - name: Validate configuration and wrapper
         run: scripts/validate.sh
       - name: Show mise formatting diff
