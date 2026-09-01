@@ -972,37 +972,7 @@
   "autoCompactWindowsCache": null,
   "hasCompletedOnboarding": true,
   "lastOnboardingVersion": "2.1.251",
-  "projects": {
-    "/__modal/volumes/vo-rGGTEE5RYJUYWE89kixIWK": {
-      "allowedTools": [],
-      "mcpContextUris": [],
-      "mcpServers": {},
-      "enabledMcpjsonServers": [],
-      "disabledMcpjsonServers": [],
-      "hasTrustDialogAccepted": true,
-      "hasClaudeMdExternalIncludesApproved": false,
-      "hasClaudeMdExternalIncludesWarningShown": false,
-      "lastGracefulShutdown": true,
-      "lastVersionBase": "2.1.251",
-      "lastCost": 0,
-      "lastAPIDuration": 0,
-      "lastAPIDurationWithoutRetries": 0,
-      "lastToolDuration": 0,
-      "lastDuration": 13411,
-      "lastStartTime": 1788217065472,
-      "lastLinesAdded": 0,
-      "lastLinesRemoved": 0,
-      "lastTotalInputTokens": 0,
-      "lastTotalOutputTokens": 0,
-      "lastTotalCacheCreationInputTokens": 0,
-      "lastTotalCacheReadInputTokens": 0,
-      "lastTotalWebSearchRequests": 0,
-      "lastFpsAverage": 2.53,
-      "lastFpsLow1Pct": 104.61,
-      "lastModelUsage": {},
-      "lastSessionId": "be1181b8-2a15-49a3-9b3b-ec13fa18351c"
-    }
-  },
+  "projects": {},
   "cachedExperimentFeatures": [
     "tengu_amber_prism",
     "tengu_carved_slate",
@@ -1116,9 +1086,6 @@
       "timestamp": 1788215175795
     }
   },
-  "claudeAiMcpEverConnected": [
-    "claude.ai Exa"
-  ],
   "tipLifetimeShownCounts": {
     "artifact-publish-plan": 1
   },
