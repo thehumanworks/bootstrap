@@ -1,16 +1,28 @@
-# Replaces /root/.config/fnox/config.toml. op:// references resolve at shell
-# start via the fnox activate hooks; sandboxes need the 1password Modal
-# secret (OP_SERVICE_ACCOUNT_TOKEN).
-default_provider = "op"
+#:schema https://fnox.jdx.dev/schema.json
+env = "exec"
+if_missing = "error"
 
 [providers.op]
 type = "1password"
 
-[secrets]
+[profiles.github.secrets]
+# fnox may use this parent credential, but the child command does not receive it.
+OP_SERVICE_ACCOUNT_TOKEN = { env = false, if_missing = "ignore" }
+GH_HOST = { default = "leadforensics.ghe.com" }
 GH_TOKEN = { provider = "op", value = "op://lf/github/token" }
-TAILSCALE_AUTHKEY = { provider = "op", value = "op://vault/tailscale/authkey" }
-CLAUDE_CODE_OAUTH_TOKEN = { provider = "op", value = "op://vault/claude/oauth/token" }
-# The bootstrap task bakes AIPROXY_BASE_URL into codex's aiproxy provider;
-# AIPROXY_API_KEY is read at runtime via the provider's env_key.
-AIPROXY_BASE_URL = { provider = "op", value = "op://vault/aiproxy/api/url" }
+
+[profiles.codex.secrets]
+OP_SERVICE_ACCOUNT_TOKEN = { env = false, if_missing = "ignore" }
+GH_HOST = { default = "leadforensics.ghe.com" }
+GH_TOKEN = { provider = "op", value = "op://lf/github/token" }
 AIPROXY_API_KEY = { provider = "op", value = "op://vault/aiproxy/api/key" }
+
+[profiles.claude.secrets]
+OP_SERVICE_ACCOUNT_TOKEN = { env = false, if_missing = "ignore" }
+GH_HOST = { default = "leadforensics.ghe.com" }
+GH_TOKEN = { provider = "op", value = "op://lf/github/token" }
+CLAUDE_CODE_OAUTH_TOKEN = { provider = "op", value = "op://vault/claude/oauth/token" }
+
+[profiles.tailscale.secrets]
+OP_SERVICE_ACCOUNT_TOKEN = { env = false, if_missing = "ignore" }
+TAILSCALE_AUTHKEY = { provider = "op", value = "op://vault/tailscale/authkey" }

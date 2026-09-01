@@ -1,63 +1,40 @@
-[tools]
-# Language Runtimes
-node = "latest"
-bun = "latest"
-deno = "latest"
-go = "latest"
-rust = "latest"
-uv = "latest"
-shfmt = "latest"
-ruff = "latest"
-# Secret Management
-fnox = "latest"
-age = "latest"
-1password = "latest"
-doppler = "latest"
-# Dev Tools
-tmux = "latest"
-herdr = "latest"
-gh = "latest"
-just = "latest"
-yq = "latest"
-fd = "latest"
-neovim = "latest"
-ripgrep = "latest"
-fzf = "latest"
-bat = "latest"
-eza = "latest"
-# Agent Harnesses
-codex = "latest"
-claude = "latest"
-"github:thehumanworks/tny" = "latest"
-
-[env]
-IS_SANDBOX = "1"
-EDITOR = "nvim"
-_.path = ["/root/.local/bin","/root/.local/share/mise/shims","/usr/bin","/usr/sbin"]
+min_version = "2026.8.15"
 
 [bootstrap.mise_shell_activate]
 bash = true
 
-[bootstrap.user]
-login_shell = "/bin/bash"
-
 [dotfiles]
-"~/.claude/settings.json" = { source = ".claude/settings.json", mode = "symlink" }
-"~/.claude.json" = { source = ".claude.json", mode = "symlink" }
-"~/.codex/config.toml" = { source = ".codex/config.toml", mode = "symlink" }
-"/root/.bashrc/fnox" = { block = '''
-eval "$(fnox activate bash)"
-'''}
-"/root/.bash_profile/fnox" = { block = '''
-eval "$(fnox activate bash)"
-'''}
+"~/.config/mise/config.toml" = { source = "mise/conf.d/tools.toml", mode = "symlink" }
+"~/.claude/settings.json" = { source = ".claude/settings.json", mode = "copy" }
+"~/.codex/config.toml" = { source = ".codex/config.toml", mode = "copy" }
 
-[shell_alias]
-codex = "fnox run -- codex --yolo"
-claude = "fnox run -- claude --dangerously-skip-permissions"
-git = "fnox run -- git"
-gh = "fnox run -- gh"
+[tasks.doctor]
+description = "Verify the bootstrap installation and authenticated tools"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
 
-[settings]
-minimum_release_age = "0"
-experimental = true
+mise doctor
+mise tasks validate --errors-only
+mise bootstrap status --missing
+FNOX_CONFIG_DIR=/nonexistent fnox --non-interactive \
+  -c "$HOME/.config/fnox/config.toml" doctor
+
+for command in git git-lfs gh fnox op codex claude jq shellcheck; do
+  command -v "$command" >/dev/null || {
+    printf 'missing command: %s\n' "$command" >&2
+    exit 1
+  }
+done
+
+for profile in github codex claude; do
+  FNOX_CONFIG_DIR=/nonexistent fnox --non-interactive \
+    -c "$HOME/.config/fnox/config.toml" \
+    -P "$profile" --no-defaults check
+done
+
+FNOX_CONFIG_DIR=/nonexistent fnox --non-interactive \
+  -c "$HOME/.config/fnox/config.toml" \
+  -P github --no-defaults exec -- \
+  bash -c 'gh auth status --hostname "$GH_HOST"'
+'''

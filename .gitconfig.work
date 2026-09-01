@@ -7,6 +7,9 @@
   autoSetupRemote = true
 [pull]
   rebase = false
+[credential "https://leadforensics.ghe.com"]
+  helper =
+  helper = "!FNOX_CONFIG_DIR=/nonexistent fnox --non-interactive -c \"$HOME/.config/fnox/config.toml\" -P github --no-defaults exec -- gh auth git-credential"
 [filter "lfs"]
   clean = git-lfs clean -- %f
   smudge = git-lfs smudge -- %f

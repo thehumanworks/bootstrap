@@ -1,0 +1,51 @@
+[tools]
+# Language runtimes
+node = "latest"
+bun = "latest"
+deno = "latest"
+go = "latest"
+rust = "latest"
+uv = "latest"
+shfmt = "latest"
+shellcheck = "latest"
+ruff = "latest"
+
+# Secret management
+fnox = "latest"
+age = "latest"
+1password = "latest"
+doppler = "latest"
+
+# Development tools
+tmux = "latest"
+herdr = "latest"
+gh = "latest"
+git-lfs = "latest"
+just = "latest"
+jq = "latest"
+yq = "latest"
+fd = "latest"
+neovim = "latest"
+ripgrep = "latest"
+fzf = "latest"
+bat = "latest"
+eza = "latest"
+
+# Agent harnesses
+codex = "latest"
+claude = "latest"
+"github:thehumanworks/tny" = { version = "latest", matching_regex = '^tny-(darwin|linux|windows)-(arm64|aarch64|x86_64)(-musl)?\.(tar\.gz|zip)$' }
+
+[env]
+IS_SANDBOX = "1"
+EDITOR = "nvim"
+
+[shell_alias]
+codex = 'FNOX_CONFIG_DIR=/nonexistent fnox --non-interactive -c "$HOME/.config/fnox/config.toml" -P codex --no-defaults exec --replace -- codex --yolo'
+claude = 'FNOX_CONFIG_DIR=/nonexistent fnox --non-interactive -c "$HOME/.config/fnox/config.toml" -P claude --no-defaults exec --replace -- claude --dangerously-skip-permissions'
+gh = 'FNOX_CONFIG_DIR=/nonexistent fnox --non-interactive -c "$HOME/.config/fnox/config.toml" -P github --no-defaults exec --replace -- gh'
+
+[settings]
+experimental = true
+lockfile = true
+minimum_release_age = "24h"

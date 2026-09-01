@@ -1,10 +1,8 @@
+redactions = ["*_TOKEN", "*_KEY"]
+
 [env]
-GH_HOST = "leadforensics.ghe.com"
+OP_SERVICE_ACCOUNT_TOKEN = { required = "Inject the sandbox's scoped 1Password service-account token", redact = true }
 
 [dotfiles]
-"~/.config/fnox/config.toml" = { source = "fnox.work.toml", mode = "symlink" }
-"~/.gitconfig" = { source = ".gitconfig.work", mode = "copy" }
-
-[bootstrap.hooks.final]
-description = "Configure work GitHub credentials"
-run = "fnox run -- gh auth setup-git --hostname leadforensics.ghe.com"
+"~/.config/fnox/config.toml" = { source = "fnox.work.toml", mode = "copy" }
+"~/.config/git/config" = { source = ".gitconfig.work", mode = "copy" }
