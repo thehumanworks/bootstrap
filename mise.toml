@@ -60,6 +60,7 @@ eval "$(fnox activate bash)"
 
 [shell_alias]
 codex = "fnox run -- codex --yolo"
+tny = "fnox run -- tny"
 claude = "fnox run -- claude --dangerously-skip-permissions"
 git = "fnox run -- git"
 gh = "fnox run -- gh"
