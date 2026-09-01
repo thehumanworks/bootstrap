@@ -33,5 +33,10 @@ jobs:
             shfmt = "3.12.0"
       - name: Validate configuration and wrapper
         run: scripts/validate.sh
+      - name: Show mise formatting diff
+        if: failure()
+        run: |
+          mise -C "$GITHUB_WORKSPACE" -E dev fmt --all
+          git --no-pager diff -- '*.toml'
       - name: Smoke-test native clone plus bootstrap
         run: tests/bootstrap_from_test.sh
