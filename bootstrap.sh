@@ -35,27 +35,27 @@ readonly script_dir
 profile="${BOOTSTRAP_PROFILE:-dev}"
 
 case "${1:-}" in
-  -h | --help)
-    usage
-    exit 0
-    ;;
-  -p | --profile)
-    (($# >= 2)) || die "$1 requires a profile name"
-    profile="$2"
-    shift 2
-    ;;
-  --profile=*)
-    profile="${1#*=}"
-    shift
-    ;;
-  --)
-    shift
-    ;;
-  -* | "") ;;
-  *)
-    profile="$1"
-    shift
-    ;;
+-h | --help)
+  usage
+  exit 0
+  ;;
+-p | --profile)
+  (($# >= 2)) || die "$1 requires a profile name"
+  profile="$2"
+  shift 2
+  ;;
+--profile=*)
+  profile="${1#*=}"
+  shift
+  ;;
+--)
+  shift
+  ;;
+-* | "") ;;
+*)
+  profile="$1"
+  shift
+  ;;
 esac
 
 if [[ "${1:-}" == "--" ]]; then

@@ -69,14 +69,14 @@ for profile in dev work; do
     fail "$profile unexpectedly manages mutable Claude state"
 
   case "$profile" in
-    dev)
-      cmp -s "$home/.config/fnox/config.toml" "$checkout/fnox.toml" ||
-        fail "dev selected the wrong fnox config"
-      ;;
-    work)
-      cmp -s "$home/.config/fnox/config.toml" "$checkout/fnox.work.toml" ||
-        fail "work selected the wrong fnox config"
-      ;;
+  dev)
+    cmp -s "$home/.config/fnox/config.toml" "$checkout/fnox.toml" ||
+      fail "dev selected the wrong fnox config"
+    ;;
+  work)
+    cmp -s "$home/.config/fnox/config.toml" "$checkout/fnox.work.toml" ||
+      fail "work selected the wrong fnox config"
+    ;;
   esac
 
   [[ -z "$(git -C "$checkout" status --porcelain)" ]] ||
