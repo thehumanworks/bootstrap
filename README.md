@@ -40,9 +40,8 @@ mise -E dev bootstrap \
   --from https://github.com/thehumanworks/bootstrap.git \
   --from-dir "$HOME/.local/share/thehumanworks-bootstrap" \
   --yes \
-  --force-dotfiles
-
-unset GH_TOKEN
+  --force-dotfiles &&
+unset GH_TOKEN &&
 exec bash -l
 ```
 
