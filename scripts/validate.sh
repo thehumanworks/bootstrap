@@ -35,6 +35,35 @@ for path in sorted(root.rglob("*.toml")):
 for path in sorted(root.rglob("*.json")):
     with path.open(encoding="utf-8") as handle:
         json.load(handle)
+
+expected_profiles = {
+    "github": {"OP_SERVICE_ACCOUNT_TOKEN", "GH_HOST", "GH_TOKEN"},
+    "codex": {
+        "OP_SERVICE_ACCOUNT_TOKEN",
+        "GH_HOST",
+        "GH_TOKEN",
+        "AIPROXY_API_KEY",
+    },
+    "claude": {
+        "OP_SERVICE_ACCOUNT_TOKEN",
+        "GH_HOST",
+        "GH_TOKEN",
+        "CLAUDE_CODE_OAUTH_TOKEN",
+    },
+    "tailscale": {"OP_SERVICE_ACCOUNT_TOKEN", "TAILSCALE_AUTHKEY"},
+}
+for path in (root / "fnox.toml", root / "fnox.work.toml"):
+    with path.open("rb") as handle:
+        profiles = tomllib.load(handle)["profiles"]
+    if set(profiles) != set(expected_profiles):
+        raise SystemExit(f"{path}: unexpected fnox profiles")
+    for profile, expected_secrets in expected_profiles.items():
+        secrets = profiles[profile]["secrets"]
+        if set(secrets) != expected_secrets:
+            raise SystemExit(f"{path}: wrong secret scope for {profile}")
+        op_token = secrets["OP_SERVICE_ACCOUNT_TOKEN"]
+        if op_token.get("env") is not False or op_token.get("if_missing") != "ignore":
+            raise SystemExit(f"{path}: {profile} exposes the 1Password token")
 PY
 
 for config in .gitconfig .gitconfig.work; do

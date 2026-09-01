@@ -87,9 +87,9 @@ does not by itself authenticate a plain `git clone`.
 
 Select work by replacing `-E dev` with `-E work`. The selected fnox file is
 copied to the home directory and each credential is injected only into the
-command profile that needs it. Codex and Claude inherit the GitHub profile so
-their nested Git operations still work, but neither receives the Tailscale
-credential or the 1Password service-account token.
+command profile that needs it. The Codex and Claude profiles include GitHub
+credentials so their nested Git operations still work, but neither receives
+the Tailscale credential or the 1Password service-account token.
 
 The XDG Git config contains a host-scoped, fnox-backed credential helper. This
 lets package managers and other child processes authenticate Git without
