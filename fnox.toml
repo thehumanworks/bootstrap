@@ -14,3 +14,5 @@ CLAUDE_CODE_OAUTH_TOKEN = { provider = "op", value = "op://vault/claude/oauth/to
 # AIPROXY_API_KEY is read at runtime via the provider's env_key.
 AIPROXY_BASE_URL = { provider = "op", value = "op://vault/aiproxy/api/url" }
 AIPROXY_API_KEY = { provider = "op", value = "op://vault/aiproxy/api/key" }
+OPENROUTER_API_KEY = { provider = "op", value = "op://vault/openrouter/api/key" }
+OPENROUTER_BASE_URL = { provider = "op", value = "op://vault/openrouter/api/url" }
