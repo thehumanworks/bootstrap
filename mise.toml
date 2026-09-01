@@ -43,7 +43,6 @@ login_shell = "/bin/bash"
 
 [dotfiles]
 "~/.claude/settings.json" = { source = ".claude/settings.json", mode = "symlink" }
-"~/.claude.json" = { source = ".claude.json", mode = "symlink" }
 "~/.codex/config.toml" = { source = ".codex/config.toml", mode = "symlink" }
 "/root/.bashrc/fnox" = { block = '''
 eval "$(fnox activate bash)"
