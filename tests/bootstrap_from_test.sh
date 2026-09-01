@@ -53,11 +53,10 @@ for profile in dev work; do
 
   [[ -L "$home/.config/mise/config.toml" ]] ||
     fail "$profile did not install the global mise config link"
-  [[ "$(readlink -f "$home/.config/mise/config.toml")" == \
-    "$checkout/mise/conf.d/tools.toml" ]] ||
+  [[ "$(readlink -f "$home/.config/mise/config.toml")" == "$checkout/mise/conf.d/tools.toml" ]] ||
     fail "$profile global mise link points at the wrong checkout"
 
-  [[ -f "$home/.config/fnox/config.toml" && \
+  [[ -f "$home/.config/fnox/config.toml" &&
     ! -L "$home/.config/fnox/config.toml" ]] ||
     fail "$profile fnox config was not copied"
   [[ -f "$home/.config/git/config" ]] ||

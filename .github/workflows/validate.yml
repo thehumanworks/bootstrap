@@ -39,6 +39,7 @@ jobs:
         if: failure()
         run: |
           mise -C "$GITHUB_WORKSPACE" -E dev fmt --all
-          git --no-pager diff -- '*.toml'
+          shfmt -i 2 -w bootstrap.sh scripts/*.sh tests/*.sh
+          git --no-pager diff -- '*.toml' '*.sh'
       - name: Smoke-test native clone plus bootstrap
         run: tests/bootstrap_from_test.sh

@@ -19,7 +19,7 @@ if command -v shellcheck >/dev/null; then
 fi
 
 if command -v shfmt >/dev/null; then
-  shfmt -d "${shell_files[@]}"
+  shfmt -i 2 -d "${shell_files[@]}"
 fi
 
 python3 - <<'PY'
