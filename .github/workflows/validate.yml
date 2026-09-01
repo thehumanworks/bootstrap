@@ -1,0 +1,34 @@
+name: Validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      CI: "1"
+      NO_COLOR: "1"
+      OP_SERVICE_ACCOUNT_TOKEN: test-placeholder-not-a-secret
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@v4
+        with:
+          version: 2026.8.16
+          cache: false
+          mise_toml: |
+            [tools]
+            fnox = "1.34.1"
+            shellcheck = "0.11.0"
+            shfmt = "3.12.0"
+      - name: Validate configuration and wrapper
+        run: scripts/validate.sh
+      - name: Smoke-test native clone plus bootstrap
+        run: tests/bootstrap_from_test.sh

@@ -1,7 +1,8 @@
-[dotfiles]
-"~/.config/fnox/config.toml" = { source = "fnox.toml", mode = "symlink" }
-"~/.gitconfig" = { source = ".gitconfig", mode = "copy" }
+redactions = ["*_TOKEN", "*_KEY"]
 
-[bootstrap.hooks.final]
-description = "Configure dev GitHub credentials"
-run = "fnox run -- gh auth setup-git --hostname github.com"
+[env]
+OP_SERVICE_ACCOUNT_TOKEN = { required = "Inject the sandbox's scoped 1Password service-account token", redact = true }
+
+[dotfiles]
+"~/.config/fnox/config.toml" = { source = "fnox.toml", mode = "copy" }
+"~/.config/git/config" = { source = ".gitconfig", mode = "copy" }

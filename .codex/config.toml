@@ -51,7 +51,7 @@ shell_snapshot_v2 = true
 local_thread_store_shared_compression = true
 skip_host_skill_discovery = true
 
-# Same models as codex, served through aiproxy (responses API).
+# Same models as Codex, served through aiproxy (Responses API).
 [model_providers.aiproxy]
 name = "aiproxy"
 base_url = "https://aiproxy.up.railway.app/v1"
@@ -67,5 +67,3 @@ theme = "sublime-snazzy"
 status_line = ["model-with-reasoning", "context-remaining", "context-window-size", "current-dir"]
 status_line_use_colors = true
 
-[projects."/__modal/volumes/vo-rGGTEE5RYJUYWE89kixIWK"]
-trust_level = "trusted"
