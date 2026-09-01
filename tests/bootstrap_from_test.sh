@@ -7,7 +7,7 @@ fail() {
 }
 
 test_dir="$(
-  CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1
+  CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1
   pwd -P
 )"
 repo_root="$(cd -- "$test_dir/.." && pwd -P)"

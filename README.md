@@ -17,38 +17,46 @@ Personal development environment for disposable Linux sandboxes, managed by
 - `OP_SERVICE_ACCOUNT_TOKEN` injected at runtime with access only to the
   referenced 1Password items
 
-The initial clone must already be authenticated. Credentials stored behind
-fnox cannot help with that clone because fnox, `op`, and `gh` are installed
-later.
+The initial clone uses an HTTPS PAT supplied as `GH_TOKEN`. Credentials stored
+behind fnox cannot help with that clone because fnox, `op`, and `gh` are
+installed later.
 
 ## Fresh sandbox: clone and bootstrap together
 
-With mise installed and SSH access to this repository:
+With mise installed and a fine-grained PAT injected into `GH_TOKEN`, this
+single invocation supplies a host-scoped, in-memory credential helper to the
+`git clone` performed by mise and then runs bootstrap:
 
 ```bash
+: "${GH_TOKEN:?inject a GitHub PAT into GH_TOKEN}"
+GIT_CONFIG_COUNT=3 \
+  GIT_CONFIG_KEY_0=credential.https://github.com.helper \
+  GIT_CONFIG_VALUE_0= \
+  GIT_CONFIG_KEY_1=credential.https://github.com.helper \
+  GIT_CONFIG_VALUE_1='!f() { if [ "$1" = get ]; then printf "%s\n" "username=x-access-token" "password=$GH_TOKEN"; fi; }; f' \
+  GIT_CONFIG_KEY_2=credential.interactive \
+  GIT_CONFIG_VALUE_2=never \
 mise -E dev bootstrap \
-  --from git@github.com:thehumanworks/bootstrap.git \
+  --from https://github.com/thehumanworks/bootstrap.git \
   --from-dir "$HOME/.local/share/thehumanworks-bootstrap" \
   --yes \
   --force-dotfiles
 
+unset GH_TOKEN
 exec bash -l
 ```
 
 `--from` performs the clone and then runs bootstrap from that checkout. Keep
 `--from-dir` at a durable path: the global mise configuration links back to
 the checkout so the installed tools and shell aliases work in every project.
+The PAT is neither placed in the URL nor written to the checkout's
+`.git/config`; the helper value contains only a reference to `GH_TOKEN`.
 
-On a minimal sandbox, install mise and continue in one shell command:
+On a minimal sandbox, install mise first, then run the same block above:
 
 ```bash
-curl -fsSL https://mise.run | sh &&
-"$HOME/.local/bin/mise" -E dev bootstrap \
-  --from git@github.com:thehumanworks/bootstrap.git \
-  --from-dir "$HOME/.local/share/thehumanworks-bootstrap" \
-  --yes \
-  --force-dotfiles &&
-exec bash -l
+curl -fsSL https://mise.run | sh
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
 The force flag is intentional for disposable homes. Omit it in an existing
@@ -56,12 +64,15 @@ home and inspect the dry run first.
 
 ## Private clone authentication
 
-Use one of these before invoking `--from`:
+Prefer a fine-grained, read-only PAT injected as `GH_TOKEN` by the sandbox's
+secret manager. The quick-start's environment-only helper resets any existing
+GitHub helper for that invocation and answers only Git's `get` operation. You
+can alternatively use:
 
 - the sandbox provider's GitHub checkout integration;
-- a read-only SSH deploy key or pre-authenticated SSH agent; or
-- a short-lived GitHub App token exposed through an environment-only Git
-  credential helper supplied by the launcher.
+- a short-lived GitHub App token exposed through an equivalent
+  environment-only Git credential helper; or
+- a preconfigured Git Credential Manager.
 
 Do not put a token in the clone URL. It can remain in process arguments, shell
 history, and the checkout's `.git/config`. `GH_TOKEN` authenticates `gh`, but
@@ -111,7 +122,7 @@ Re-run and fast-forward the stored checkout:
 
 ```bash
 mise -E dev bootstrap \
-  --from git@github.com:thehumanworks/bootstrap.git \
+  --from https://github.com/thehumanworks/bootstrap.git \
   --from-dir "$HOME/.local/share/thehumanworks-bootstrap" \
   --update \
   --yes \
@@ -164,5 +175,6 @@ For frequently-created sandboxes:
 - [fnox profiles and secret scope](https://fnox.jdx.dev/reference/configuration.html)
 - [fnox exec](https://fnox.jdx.dev/cli/exec.html)
 - [Git credential helpers](https://git-scm.com/docs/gitcredentials#_custom_helpers)
+- [GitHub personal access tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
 - [GitHub CLI environment variables](https://cli.github.com/manual/gh_help_environment)
 - [Claude Code settings](https://docs.anthropic.com/en/docs/claude-code/settings)

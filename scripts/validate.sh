@@ -2,7 +2,7 @@
 set -euo pipefail
 
 script_dir="$(
-  CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1
+  CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1
   pwd -P
 )"
 repo_root="$(cd -- "$script_dir/.." && pwd -P)"
@@ -49,6 +49,7 @@ if command -v fnox >/dev/null; then
 fi
 
 tests/bootstrap_test.sh
+tests/github_pat_credential_test.sh
 
 mise_bin="${MISE_BIN:-$(type -P mise 2>/dev/null || true)}"
 if [[ -x "$mise_bin" ]]; then

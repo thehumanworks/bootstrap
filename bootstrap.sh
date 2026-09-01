@@ -27,7 +27,7 @@ EOF
 }
 
 script_dir="$(
-  CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1
+  CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1
   pwd -P
 )" || die "could not resolve the repository directory"
 readonly script_dir
@@ -114,4 +114,3 @@ EOF
 fi
 
 exec "$mise_bin" -C "$script_dir" -E "$profile" bootstrap --yes "$@"
-
