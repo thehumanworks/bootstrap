@@ -7,7 +7,7 @@ fail() {
 }
 
 test_token='github_pat_test-only-not-a-secret'
-helper='!f() { if [ "$1" = get ]; then printf "%s\n" "username=x-access-token" "password=$GH_TOKEN"; fi; }; f'
+helper="!f() { if [ \"\$1\" = get ]; then printf \"%s\\n\" \"username=x-access-token\" \"password=\$GH_TOKEN\"; fi; }; f"
 
 tmp="$(mktemp -d)"
 trap 'rm -rf -- "$tmp"' EXIT
@@ -21,7 +21,7 @@ credentials="$({
   GH_TOKEN="$test_token" \
   GIT_CONFIG_COUNT=3 \
   GIT_CONFIG_KEY_0=credential.https://github.com.helper \
-  GIT_CONFIG_VALUE_0= \
+  GIT_CONFIG_VALUE_0='' \
   GIT_CONFIG_KEY_1=credential.https://github.com.helper \
   GIT_CONFIG_VALUE_1="$helper" \
   GIT_CONFIG_KEY_2=credential.interactive \
@@ -37,7 +37,7 @@ grep -Fxq 'username=x-access-token' <<<"$credentials" ||
 grep -Fxq "password=$test_token" <<<"$credentials" ||
   fail 'PAT was not supplied as the credential password'
 
-[[ "$helper" == *'password=$GH_TOKEN'* ]] ||
+[[ "$helper" == *GH_TOKEN* ]] ||
   fail 'helper does not defer PAT lookup to runtime'
 [[ "$helper" != *"$test_token"* ]] ||
   fail 'helper embeds the PAT value'

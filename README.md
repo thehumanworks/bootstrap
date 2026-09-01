@@ -31,7 +31,7 @@ single invocation supplies a host-scoped, in-memory credential helper to the
 : "${GH_TOKEN:?inject a GitHub PAT into GH_TOKEN}"
 GIT_CONFIG_COUNT=3 \
   GIT_CONFIG_KEY_0=credential.https://github.com.helper \
-  GIT_CONFIG_VALUE_0= \
+  GIT_CONFIG_VALUE_0='' \
   GIT_CONFIG_KEY_1=credential.https://github.com.helper \
   GIT_CONFIG_VALUE_1='!f() { if [ "$1" = get ]; then printf "%s\n" "username=x-access-token" "password=$GH_TOKEN"; fi; }; f' \
   GIT_CONFIG_KEY_2=credential.interactive \
