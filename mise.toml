@@ -27,7 +27,14 @@ bat = "latest"
 eza = "latest"
 # Agent Harnesses
 codex = "latest"
-claude = "latest"
+"http:claude" = {
+  version = "latest",
+  url = 'https://downloads.claude.ai/claude-code-releases/{{ version }}/{{ os(macos="darwin") }}-{{ arch() }}/claude',
+  version_list_url = "https://downloads.claude.ai/claude-code-releases/latest",
+  checksum_url = "https://downloads.claude.ai/claude-code-releases/{{ version }}/manifest.json",
+  checksum_expr = '"sha256:" + fromJSON(body).platforms[(os == "macos" ? "darwin" : os) + "-" + arch].checksum',
+  bin = "claude",
+}
 "github:thehumanworks/tny" = "latest"
 
 [env]
