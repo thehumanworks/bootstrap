@@ -1,3 +1,4 @@
+import json
 import re
 import unittest
 from pathlib import Path
@@ -28,6 +29,18 @@ class BootstrapContractTests(unittest.TestCase):
             re.compile(r'^"npm:@openai/codex"\s*=', re.MULTILINE),
         )
         self.assertRegex(self.config, re.compile(r"^neovim\s*=", re.MULTILINE))
+
+    def test_claude_oauth_onboarding_state_is_minimal_and_copied(self) -> None:
+        self.assertRegex(
+            self.config,
+            re.compile(
+                r'^"~/.claude\.json" = '
+                r'\{ source = "\.claude\.json", mode = "copy" \}$',
+                re.MULTILINE,
+            ),
+        )
+        with (REPOSITORY / ".claude.json").open(encoding="utf-8") as state_file:
+            self.assertEqual(json.load(state_file), {"hasCompletedOnboarding": True})
 
 
 if __name__ == "__main__":
