@@ -1,5 +1,5 @@
 # Replaces /root/.config/fnox/config.toml. op:// references resolve at shell
-# start via the fnox activate hooks; sandboxes need the 1password Modal
+# start via the fnox activation block; sandboxes need the 1password Modal
 # secret (OP_SERVICE_ACCOUNT_TOKEN).
 default_provider = "op"
 

@@ -51,19 +51,19 @@ login_shell = "/bin/bash"
 [dotfiles]
 "~/.claude/settings.json" = { source = ".claude/settings.json", mode = "symlink" }
 "~/.codex/config.toml" = { source = ".codex/config.toml", mode = "symlink" }
+"~/.config/mise/conf.d/secret-tools.toml" = { content = '''
+[tools]
+fnox = "latest"
+1password = "latest"
+'''}
 "/root/.bashrc/fnox" = { block = '''
-eval "$(fnox activate bash)"
+eval "$(mise exec -- fnox activate bash)"
+eval "$(mise exec -- fnox hook-env --shell bash)"
 '''}
 "/root/.bash_profile/fnox" = { block = '''
-eval "$(fnox activate bash)"
+eval "$(mise exec -- fnox activate bash)"
+eval "$(mise exec -- fnox hook-env --shell bash)"
 '''}
-
-[shell_alias]
-codex = "fnox run -- codex --yolo"
-tny = "fnox run -- tny"
-claude = "fnox run -- claude --dangerously-skip-permissions"
-git = "fnox run -- git"
-gh = "fnox run -- gh"
 
 [settings]
 minimum_release_age = "0"

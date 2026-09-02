@@ -7,4 +7,4 @@ GH_HOST = "leadforensics.ghe.com"
 
 [bootstrap.hooks.final]
 description = "Configure work GitHub credentials"
-run = "fnox run -- gh auth setup-git --hostname leadforensics.ghe.com"
+run = "mise exec -- fnox exec -- gh auth setup-git --hostname leadforensics.ghe.com"

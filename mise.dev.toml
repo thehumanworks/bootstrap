@@ -2,6 +2,22 @@
 "~/.config/fnox/config.toml" = { source = "fnox.toml", mode = "symlink" }
 "~/.gitconfig" = { source = ".gitconfig", mode = "copy" }
 
+[bootstrap.packages]
+"apt:openssh-server" = { version = "latest", os = "linux" }
+
 [bootstrap.hooks.final]
 description = "Configure dev GitHub credentials"
-run = "fnox run -- gh auth setup-git --hostname github.com"
+run = "mise exec -- fnox exec -- gh auth setup-git --hostname github.com"
+
+[tasks."ssh:start"]
+description = "Start the SSH server"
+run = '''
+test -x /usr/sbin/sshd || {
+  echo "openssh-server is not installed; run ./bootstrap.sh dev first" >&2
+  exit 1
+}
+install -d -m 0755 /run/sshd
+ssh-keygen -A
+/usr/sbin/sshd -t
+exec /usr/sbin/sshd -D -e
+'''
