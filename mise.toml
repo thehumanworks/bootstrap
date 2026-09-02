@@ -1,41 +1,41 @@
 [tools]
 # Language Runtimes
-node = "latest"
-bun = "latest"
-deno = "latest"
-go = "latest"
-rust = "latest"
-uv = "latest"
-shfmt = "latest"
-ruff = "latest"
+node = "26.8.1"
+bun = "1.4.0"
+deno = "2.9.6"
+go = "1.27.1"
+rust = "1.98.0"
+uv = "0.12.9"
+shfmt = "3.14.0"
+ruff = "0.16.5"
 # Secret Management
-fnox = "latest"
-age = "latest"
-1password = "latest"
-doppler = "latest"
+fnox = "1.34.1"
+age = "1.3.2"
+1password = "2.39.0"
+doppler = "3.76.5"
 # Dev Tools
-tmux = "latest"
-herdr = "latest"
-gh = "latest"
-just = "latest"
-yq = "latest"
-fd = "latest"
-neovim = "latest"
-ripgrep = "latest"
-fzf = "latest"
-bat = "latest"
-eza = "latest"
+tmux = "3.7c"
+herdr = "0.8.2"
+gh = "2.99.0"
+just = "1.58.0"
+yq = "4.53.6"
+fd = "10.5.0"
+neovim = "0.12.5"
+ripgrep = "15.2.0"
+fzf = "0.74.3"
+bat = "0.26.1"
+eza = "0.23.5"
 # Agent Harnesses
-codex = "latest"
+"npm:@openai/codex" = "0.153.0-alpha.6"
 "http:claude" = {
-  version = "latest",
+  version = "2.1.258",
   url = 'https://downloads.claude.ai/claude-code-releases/{{ version }}/{{ os(macos="darwin") }}-{{ arch() }}/claude',
   version_list_url = "https://downloads.claude.ai/claude-code-releases/latest",
   checksum_url = "https://downloads.claude.ai/claude-code-releases/{{ version }}/manifest.json",
   checksum_expr = '"sha256:" + fromJSON(body).platforms[(os == "macos" ? "darwin" : os) + "-" + arch].checksum',
   bin = "claude",
 }
-"github:thehumanworks/tny" = "latest"
+"github:thehumanworks/tny" = "0.3.1"
 
 [env]
 IS_SANDBOX = "1"
@@ -53,8 +53,8 @@ login_shell = "/bin/bash"
 "~/.codex/config.toml" = { source = ".codex/config.toml", mode = "symlink" }
 "~/.config/mise/conf.d/secret-tools.toml" = { content = '''
 [tools]
-fnox = "latest"
-1password = "latest"
+fnox = "1.34.1"
+1password = "2.39.0"
 '''}
 "/root/.bashrc/fnox" = { block = '''
 eval "$(mise exec -- fnox activate bash)"

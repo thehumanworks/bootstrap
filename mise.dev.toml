@@ -4,7 +4,7 @@
 
 [tools]
 # Ships both `tailscale` and `tailscaled` on Linux; only the CLI exists on macOS.
-"aqua:tailscale/tailscale" = { version = "latest", os = ["linux"] }
+"aqua:tailscale/tailscale" = { version = "1.102.3", os = ["linux"] }
 
 [bootstrap.hooks.final]
 description = "Configure dev GitHub credentials"
