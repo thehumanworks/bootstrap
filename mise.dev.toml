@@ -2,22 +2,46 @@
 "~/.config/fnox/config.toml" = { source = "fnox.toml", mode = "symlink" }
 "~/.gitconfig" = { source = ".gitconfig", mode = "copy" }
 
-[bootstrap.packages]
-"apt:openssh-server" = { version = "latest", os = "linux" }
+[tools]
+# Ships both `tailscale` and `tailscaled` on Linux; only the CLI exists on macOS.
+"aqua:tailscale/tailscale" = { version = "latest", os = ["linux"] }
 
 [bootstrap.hooks.final]
 description = "Configure dev GitHub credentials"
 run = "mise exec -- fnox exec -- gh auth setup-git --hostname github.com"
 
 [tasks."ssh:start"]
-description = "Start the SSH server"
+description = "Join the tailnet with Tailscale SSH enabled (userspace networking)"
 run = '''
-test -x /usr/sbin/sshd || {
-  echo "openssh-server is not installed; run ./bootstrap.sh dev first" >&2
-  exit 1
-}
-install -d -m 0755 /run/sshd
-ssh-keygen -A
-/usr/sbin/sshd -t
-exec /usr/sbin/sshd -D -e
+set -eu
+hostname="${TAILSCALE_HOSTNAME:-$(hostname)}"
+up_timeout="${TAILSCALE_UP_TIMEOUT:-120s}"
+state_dir=/var/lib/tailscale
+socket=/var/run/tailscale/tailscaled.sock
+
+install -d -m 0755 "$state_dir" "$(dirname "$socket")"
+if ! tailscale --socket="$socket" status --json >/dev/null 2>&1; then
+  # Userspace networking needs no TUN device or NET_ADMIN; survives task exit.
+  setsid nohup tailscaled --tun=userspace-networking \
+    --state="$state_dir/tailscaled.state" --socket="$socket" \
+    >/var/log/tailscaled.log 2>&1 &
+  for _ in $(seq 1 120); do
+    tailscale --socket="$socket" status --json >/dev/null 2>&1 && break
+    sleep 0.5
+  done
+  tailscale --socket="$socket" status --json >/dev/null 2>&1 || {
+    echo "tailscaled did not start; see /var/log/tailscaled.log" >&2
+    exit 1
+  }
+fi
+
+# The auth key never appears on a command line: it is passed through a
+# root-only temporary file that is removed as soon as `tailscale up` returns.
+umask 077
+keyfile=$(mktemp)
+trap 'rm -f "$keyfile"' EXIT
+printf '%s' "${TAILSCALE_AUTHKEY:-$(fnox get TAILSCALE_AUTHKEY)}" >"$keyfile"
+tailscale --socket="$socket" up --ssh --auth-key="file:$keyfile" \
+  --hostname="$hostname" --accept-dns=false --timeout="$up_timeout"
+tailscale --socket="$socket" ip -4
 '''
