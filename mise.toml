@@ -93,4 +93,3 @@ tny = "fnox run -- tny"
 [settings]
 minimum_release_age = "0"
 experimental = true
-prerelease = true
