@@ -1,16 +1,38 @@
 import json
 import re
+import tomllib
 import unittest
 from pathlib import Path
 
 
 REPOSITORY = Path(__file__).resolve().parents[1]
 
+HOST_APT_PACKAGES = (
+    "procps",
+    "unzip",
+    "zip",
+    "zstd",
+    "file",
+    "tree",
+    "bsdextrautils",
+    "gettext-base",
+    "sqlite3",
+    "rsync",
+    "lsof",
+    "iproute2",
+    "dnsutils",
+    "iputils-ping",
+)
+
+PACKAGE_MANAGER_TOOLS = ("pnpm", "yarn", "npm:corepack")
+JSON_TOOLS = ("jq", "shellcheck")
+
 
 class BootstrapContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.config = (REPOSITORY / "mise.toml").read_text(encoding="utf-8")
+        cls.parsed = tomllib.loads(cls.config)
 
     def test_global_mise_config_is_backed_by_the_canonical_checkout(self) -> None:
         self.assertRegex(
@@ -29,6 +51,30 @@ class BootstrapContractTests(unittest.TestCase):
             re.compile(r'^"npm:@openai/codex"\s*=', re.MULTILINE),
         )
         self.assertRegex(self.config, re.compile(r"^neovim\s*=", re.MULTILINE))
+
+    def test_host_utilities_are_declared_as_apt_packages(self) -> None:
+        packages = self.parsed["bootstrap"]["packages"]
+        for name in HOST_APT_PACKAGES:
+            self.assertEqual(packages[f"apt:{name}"], "latest")
+
+    def test_package_managers_and_json_tools_are_pinned(self) -> None:
+        tools = self.parsed["tools"]
+        for name in PACKAGE_MANAGER_TOOLS + JSON_TOOLS:
+            self.assertIn(name, tools)
+            self.assertTrue(str(tools[name]).strip())
+
+    def test_global_claude_md_is_symlinked_from_the_checkout(self) -> None:
+        self.assertRegex(
+            self.config,
+            re.compile(
+                r'^"~/.claude/CLAUDE\.md" = '
+                r'\{ source = "\.claude/CLAUDE\.md", mode = "symlink" \}$',
+                re.MULTILINE,
+            ),
+        )
+        claude_md = (REPOSITORY / ".claude" / "CLAUDE.md").read_text(encoding="utf-8")
+        for needle in ("mise", "fnox", "1 vCPU", "packageManager"):
+            self.assertIn(needle, claude_md)
 
     def test_claude_oauth_onboarding_state_is_minimal_and_copied(self) -> None:
         self.assertRegex(

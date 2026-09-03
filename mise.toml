@@ -6,8 +6,13 @@ deno = "2.9.6"
 go = "1.27.1"
 rust = "1.98.0"
 uv = "0.12.9"
+pnpm = "12.3.1"
+yarn = "4.18.0"
+"npm:corepack" = "0.36.0"
 shfmt = "3.14.0"
 ruff = "0.16.5"
+jq = "1.8.2"
+shellcheck = "0.11.0"
 # Secret Management
 fnox = "1.34.1"
 age = "1.3.2"
@@ -48,9 +53,27 @@ bash = true
 [bootstrap.user]
 login_shell = "/bin/bash"
 
+# Host utilities for Debian-family sandboxes. Ignored on macOS.
+[bootstrap.packages]
+"apt:procps" = "latest"
+"apt:unzip" = "latest"
+"apt:zip" = "latest"
+"apt:zstd" = "latest"
+"apt:file" = "latest"
+"apt:tree" = "latest"
+"apt:bsdextrautils" = "latest"
+"apt:gettext-base" = "latest"
+"apt:sqlite3" = "latest"
+"apt:rsync" = "latest"
+"apt:lsof" = "latest"
+"apt:iproute2" = "latest"
+"apt:dnsutils" = "latest"
+"apt:iputils-ping" = "latest"
+
 [dotfiles]
 "~/.config/mise/config.toml" = { source = "mise.toml", mode = "symlink" }
 "~/.claude/settings.json" = { source = ".claude/settings.json", mode = "symlink" }
+"~/.claude/CLAUDE.md" = { source = ".claude/CLAUDE.md", mode = "symlink" }
 "~/.claude.json" = { source = ".claude.json", mode = "copy" }
 "~/.codex/config.toml" = { source = ".codex/config.toml", mode = "symlink" }
 "~/.config/mise/conf.d/secret-tools.toml" = { content = '''
