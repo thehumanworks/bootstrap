@@ -58,14 +58,14 @@ login_shell = "/bin/bash"
 fnox = "1.34.1"
 1password = "2.39.0"
 ''' }
-"/root/.bashrc/fnox" = { block = '''
-eval "$(mise exec -- fnox activate bash)"
-eval "$(mise exec -- fnox hook-env --shell bash)"
-''' }
-"/root/.bash_profile/fnox" = { block = '''
-eval "$(mise exec -- fnox activate bash)"
-eval "$(mise exec -- fnox hook-env --shell bash)"
-''' }
+"~/.bashrc/fnox" = { block = 'eval "$(mise exec -- fnox activate bash)"' }
+"~/.bash_profile/fnox" = { block = 'eval "$(mise exec -- fnox activate bash)"' }
+
+[shell_alias]
+claude = "fnox run -- claude"
+gh = "fnox run -- gh"
+git = "fnox run -- git"
+tny = "fnox run -- tny"
 
 [settings]
 minimum_release_age = "0"
