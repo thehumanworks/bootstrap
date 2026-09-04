@@ -34,8 +34,8 @@ fzf = "0.74.3"
 bat = "0.26.1"
 eza = "0.23.5"
 # Agent Harnesses
-"npm:@openai/codex" = "0.154.0-alpha.1"
-"github:thehumanworks/tny" = "0.3.1"
+"npm:@openai/codex" = "alpha"
+"github:thehumanworks/tny" = "latest"
 # Ships both `tailscale` and `tailscaled` on Linux; only the CLI exists on macOS.
 "aqua:tailscale/tailscale" = { version = "1.102.3", os = ["linux"] }
 
@@ -166,10 +166,7 @@ dir = "{{ config_root }}"
 run = "python -m unittest discover -s tests -v"
 
 [settings]
-# Two-day soak before consuming a fresh release; override per-install when
-# deliberately bumping to a <2-day-old Claude Code build.
-minimum_release_age = "2 days"
-lockfile = true
+minimum_release_age = "0"
 # Sandboxes are 1 vCPU; don't let installs/builds thrash the core.
 jobs = 2
 experimental = true
