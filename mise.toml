@@ -1,5 +1,6 @@
 [tools]
 # Language Runtimes
+python = "3.14.7"
 node = "26.8.1"
 bun = "1.4.0"
 deno = "2.9.6"
@@ -13,6 +14,8 @@ shfmt = "3.14.0"
 ruff = "0.16.5"
 jq = "1.8.2"
 shellcheck = "0.11.0"
+taplo = "0.10.0"
+git-lfs = "3.8.0"
 # Secret Management
 fnox = "1.34.1"
 age = "1.3.2"
@@ -33,6 +36,8 @@ eza = "0.23.5"
 # Agent Harnesses
 "npm:@openai/codex" = "0.154.0-alpha.1"
 "github:thehumanworks/tny" = "0.3.1"
+# Ships both `tailscale` and `tailscaled` on Linux; only the CLI exists on macOS.
+"aqua:tailscale/tailscale" = { version = "1.102.3", os = ["linux"] }
 
 [tools."http:claude"]
 version = "2.1.258"
@@ -45,7 +50,16 @@ bin = "claude"
 [env]
 IS_SANDBOX = "1"
 EDITOR = "nvim"
-_.path = ["~/.local/bin", "~/.local/share/mise/shims", "/usr/bin", "/usr/sbin"]
+# command-wrappers/bin comes first so `git`/`gh`/`claude`/`tny` hit the fnox
+# wrappers even in shells where full `mise activate` strips the shims dir
+# (e.g. Claude Code's Bash tool). Shims stay for non-activated exec paths.
+_.path = ["~/.local/bin", "~/.local/share/mise/command-wrappers/bin", "~/.local/share/mise/shims", "/usr/bin", "/usr/sbin"]
+
+# gVisor images ship /tmp as 0755; apt (and anything else that de-privileges)
+# needs sticky 1777. Runs before [bootstrap.packages] so apt-get works.
+[bootstrap.hooks.pre-packages]
+description = "Fix /tmp permissions (gVisor images ship 0755)"
+run = "chmod 1777 /tmp"
 
 [bootstrap.mise_shell_activate]
 bash = true
@@ -72,10 +86,13 @@ login_shell = "/bin/bash"
 
 [dotfiles]
 "~/.config/mise/config.toml" = { source = "mise.toml", mode = "symlink" }
-"~/.claude/settings.json" = { source = ".claude/settings.json", mode = "symlink" }
+# settings.json is copied, not symlinked: Claude Code rewrites it at runtime
+# (/model, /config), and a symlink would silently dirty this checkout.
+"~/.claude/settings.json" = { source = ".claude/settings.json", mode = "copy" }
 "~/.claude/CLAUDE.md" = { source = ".claude/CLAUDE.md", mode = "symlink" }
 "~/.claude.json" = { source = ".claude.json", mode = "copy" }
-"~/.codex/config.toml" = { source = ".codex/config.toml", mode = "symlink" }
+# Copied for the same reason: codex writes memories/trust entries into it.
+"~/.codex/config.toml" = { source = ".codex/config.toml", mode = "copy" }
 "~/.config/mise/conf.d/secret-tools.toml" = { content = '''
 [tools]
 fnox = "1.34.1"
@@ -105,6 +122,54 @@ args = ["run", "--if-missing", "warn", "--non-interactive", "--", "git"]
 command = "fnox"
 args = ["run", "--if-missing", "warn", "--non-interactive", "--", "tny"]
 
+# Global (not mise.dev.toml) so the recovery path is reachable from /workdir
+# and /root, not just from inside this checkout.
+[tasks."ssh:start"]
+description = "Join the tailnet with Tailscale SSH enabled (userspace networking)"
+run = '''
+set -eu
+hostname="${TAILSCALE_HOSTNAME:-$(hostname)}"
+up_timeout="${TAILSCALE_UP_TIMEOUT:-120s}"
+state_dir=/var/lib/tailscale
+socket=/var/run/tailscale/tailscaled.sock
+
+install -d -m 0755 "$state_dir" "$(dirname "$socket")"
+if ! tailscale --socket="$socket" status --json >/dev/null 2>&1; then
+  # Userspace networking needs no TUN device or NET_ADMIN; survives task exit.
+  setsid nohup tailscaled --tun=userspace-networking \
+    --state="$state_dir/tailscaled.state" --socket="$socket" \
+    >/var/log/tailscaled.log 2>&1 &
+  for _ in $(seq 1 120); do
+    tailscale --socket="$socket" status --json >/dev/null 2>&1 && break
+    sleep 0.5
+  done
+  tailscale --socket="$socket" status --json >/dev/null 2>&1 || {
+    echo "tailscaled did not start; see /var/log/tailscaled.log" >&2
+    exit 1
+  }
+fi
+
+# The auth key never appears on a command line: it is passed through a
+# root-only temporary file that is removed as soon as `tailscale up` returns.
+umask 077
+keyfile=$(mktemp)
+trap 'rm -f "$keyfile"' EXIT
+printf '%s' "${TAILSCALE_AUTHKEY:-$(fnox get TAILSCALE_AUTHKEY)}" >"$keyfile"
+tailscale --socket="$socket" up --ssh --auth-key="file:$keyfile" \
+  --hostname="$hostname" --accept-dns=false --timeout="$up_timeout"
+tailscale --socket="$socket" ip -4
+'''
+
+[tasks.test]
+description = "Bootstrap contract tests"
+dir = "{{ config_root }}"
+run = "python -m unittest discover -s tests -v"
+
 [settings]
-minimum_release_age = "0"
+# Two-day soak before consuming a fresh release; override per-install when
+# deliberately bumping to a <2-day-old Claude Code build.
+minimum_release_age = "2 days"
+lockfile = true
+# Sandboxes are 1 vCPU; don't let installs/builds thrash the core.
+jobs = 2
 experimental = true
