@@ -84,11 +84,26 @@ fnox = "1.34.1"
 "~/.bashrc/fnox" = { block = 'eval "$(mise exec -- fnox activate bash)"' }
 "~/.bash_profile/fnox" = { block = 'eval "$(mise exec -- fnox activate bash)"' }
 
-[shell_alias]
-claude = "fnox run -- claude"
-gh = "fnox run -- gh"
-git = "fnox run -- git"
-tny = "fnox run -- tny"
+# PATH wrappers, not shell aliases. Modal Sandbox.exec and sb exec run argv
+# directly, so [shell_alias] never fires. [wrappers] dispatch from the mise
+# shim: https://mise.jdx.dev/dev-tools/shims.html#command-wrappers
+# --if-missing warn keeps image-build `mise exec -- gh` working when 1Password
+# is not attached. --non-interactive blocks browser prompts in sandboxes.
+[wrappers.claude]
+command = "fnox"
+args = ["run", "--if-missing", "warn", "--non-interactive", "--", "claude"]
+
+[wrappers.gh]
+command = "fnox"
+args = ["run", "--if-missing", "warn", "--non-interactive", "--", "gh"]
+
+[wrappers.git]
+command = "fnox"
+args = ["run", "--if-missing", "warn", "--non-interactive", "--", "git"]
+
+[wrappers.tny]
+command = "fnox"
+args = ["run", "--if-missing", "warn", "--non-interactive", "--", "tny"]
 
 [settings]
 minimum_release_age = "0"

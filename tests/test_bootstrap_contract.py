@@ -76,6 +76,24 @@ class BootstrapContractTests(unittest.TestCase):
         for needle in ("mise", "fnox", "1 vCPU", "packageManager"):
             self.assertIn(needle, claude_md)
 
+    def test_secret_tools_use_mise_wrappers_not_shell_aliases(self) -> None:
+        self.assertNotIn("shell_alias", self.parsed)
+        wrappers = self.parsed["wrappers"]
+        for name in ("claude", "gh", "git", "tny"):
+            wrapper = wrappers[name]
+            self.assertEqual(wrapper["command"], "fnox")
+            self.assertEqual(
+                wrapper["args"],
+                [
+                    "run",
+                    "--if-missing",
+                    "warn",
+                    "--non-interactive",
+                    "--",
+                    name,
+                ],
+            )
+
     def test_claude_oauth_onboarding_state_is_minimal_and_copied(self) -> None:
         self.assertRegex(
             self.config,

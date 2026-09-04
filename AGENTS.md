@@ -1,5 +1,8 @@
 # Repository instructions
 
+Architecture decisions live in [`docs/adrs/`](docs/adrs/). Read those ADRs
+before changing bootstrap, secrets, tool wrapping, or sandbox shell setup.
+
 ## Live Modal integration testing
 
 After making any change in this repository, always run the relevant end-to-end integration test against the user's live Modal account.

@@ -15,8 +15,10 @@ scratch each session.
 ## Secrets
 
 `fnox` injects secrets at the shell. `claude`, `gh`, `git`, and `tny`
-already run through `fnox run`. Never print, log, or persist secret
-values, including `GH_TOKEN`, `OPENROUTER_API_KEY`, and `AIPROXY_API_KEY`.
+are mise command wrappers around `fnox run`, so they apply to
+`Sandbox.exec` as well as interactive shells. Never print, log, or
+persist secret values, including `GH_TOKEN`, `OPENROUTER_API_KEY`, and
+`AIPROXY_API_KEY`.
 
 ## Constraints
 
