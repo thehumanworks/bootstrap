@@ -35,6 +35,11 @@ bat = "0.26.1"
 eza = "0.23.5"
 # Agent Harnesses
 "npm:@openai/codex" = "alpha"
+# tny <= 0.4.0 ships *.provenance.json release assets that are SDK metadata,
+# not sigstore attestations; an old mise once recorded one as provenance.slsa
+# in mise.lock, tripping the provenance-downgrade guard on upgrades. If that
+# recurs, delete the tny provenance block from mise.lock. tny releases after
+# 0.4.0 carry real GitHub build attestations.
 "github:thehumanworks/tny" = "latest"
 # Ships both `tailscale` and `tailscaled` on Linux; only the CLI exists on macOS.
 "aqua:tailscale/tailscale" = { version = "1.102.3", os = ["linux"] }
