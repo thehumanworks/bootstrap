@@ -1,0 +1,54 @@
+#!/bin/sh
+
+# Agent-harness hook: publish the agent's state to the tmux pane it runs in.
+#
+# Usage: agent-tmux-state <working|input|done|clear>
+#
+# The state lands in the per-pane user option @agent_state, which tmux.conf
+# renders in the pane border and counts in the status bar. `input` and `done`
+# also ring the terminal bell on the pane's own tty so tmux flags the window
+# (monitor-bell) and Hyper-f can jump to it. Claude Code, Codex, and Cursor
+# call it from their hooks (dotfiles/claude, dotfiles/codex, dotfiles/cursor);
+# any other agent can run the same command.
+#
+# Exit 0 in every case: a hook failure must never block the agent.
+
+set -u
+
+state=${1:-}
+[ -n "$state" ] || exit 0
+[ -n "${TMUX_PANE:-}" ] || exit 0
+
+tmux_bin=${TMUX_BIN:-tmux}
+command -v "$tmux_bin" >/dev/null 2>&1 || exit 0
+
+# Drain stdin so the harness never sees a broken pipe on the hook payload.
+cat >/dev/null 2>&1 || true
+
+case $state in
+working) label='▶ working' ;;
+input) label='⏳ input' ;;
+done) label='✔ done' ;;
+clear) label='' ;;
+*) exit 0 ;;
+esac
+
+if [ -n "$label" ]; then
+	"$tmux_bin" set-option -p -t "$TMUX_PANE" @agent_state "$label" >/dev/null 2>&1 || true
+else
+	"$tmux_bin" set-option -pu -t "$TMUX_PANE" @agent_state >/dev/null 2>&1 || true
+fi
+
+# Ring the bell on the pane's tty. A hook may run in a sandbox that cannot
+# open the tty (Codex does this), so fall back to writing from the tmux
+# server, which run-shell executes outside any sandbox.
+case $state in
+input | done)
+	tty=$("$tmux_bin" display-message -p -t "$TMUX_PANE" '#{pane_tty}' 2>/dev/null || true)
+	if [ -z "$tty" ] || ! { [ -w "$tty" ] && printf '\a' >"$tty"; } 2>/dev/null; then
+		"$tmux_bin" run-shell -b -t "$TMUX_PANE" 'printf "\a" > "#{pane_tty}"' >/dev/null 2>&1 || true
+	fi
+	;;
+esac
+
+exit 0

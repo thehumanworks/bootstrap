@@ -1,0 +1,16 @@
+# Explicit opt-in for a Linux keyboard host. Do not enable on SSH-only hosts.
+# Install with `mise run --skip-tools keyboard:setup` from this checkout.
+[bootstrap.packages]
+"apt:keyd" = "latest"
+
+[bootstrap.files."/etc/keyd/bootstrap-tmux.conf"]
+source = "dotfiles/keyd/tmux.conf"
+owner = "root"
+group = "root"
+mode = "0644"
+notify = ["keyd"]
+
+[bootstrap.services.keyd]
+state = "running"
+enabled = true
+on_change = "reload_or_restart"

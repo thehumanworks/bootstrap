@@ -1,0 +1,679 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+PROGRAM=${0##*/}
+TMUX_BIN=${TMUX_BIN:-tmux}
+TAB=$(printf '\t')
+SESSION_FORMAT='#{session_name}|#{session_windows}|#{session_attached}|#{@workspace_kind}|#{@workspace_root}'
+
+usage() {
+	cat <<'USAGE'
+Usage: tw <command> [arguments]
+
+Workspace commands:
+  list
+      List persistent tmux workspaces.
+  new [--detached] [name] [directory]
+      Create a standard workspace with one main window.
+  agent [--detached] [name] [directory] [pane-count]
+      Create an orchestrator window and a tiled agent window.
+  grid [pane-count] [window-name] [directory]
+      Add a tiled agent window to the current workspace.
+  worktree [pane-id]
+      Open a window in a new Git worktree, or the pane directory outside Git.
+  worktree-merge [pane-id]
+      Merge this worktree into its recorded parent branch (use the key binding
+      for confirmation).
+  worktree-remove [pane-id]
+      Remove a clean linked worktree and close its pane, keeping its branch
+      (use the key binding for confirmation).
+  switch [name]
+      Select a workspace and switch to it (or attach outside tmux).
+  attach [name]
+      Attach to a selected workspace; equivalent to switch inside tmux.
+  kill [--force] [name]
+      Select and remove a workspace.
+  rename [name]
+      Rename the current or selected workspace.
+  keys [--pause]
+      Show the prefixless tmux key map.
+  help
+      Show this help.
+
+Running `tw` without a command is equivalent to `tw attach`.
+USAGE
+}
+
+fail() {
+	printf '%s: %s\n' "$PROGRAM" "$*" >&2
+	exit 1
+}
+
+require_tmux() {
+	command -v "$TMUX_BIN" >/dev/null 2>&1 || fail "tmux is not installed or is not on PATH"
+}
+
+tmux_cmd() {
+	"$TMUX_BIN" "$@"
+}
+
+inside_tmux() {
+	[[ -n ${TMUX:-} ]]
+}
+
+current_format() {
+	local format=$1
+	if [[ -n ${TMUX_PANE:-} ]]; then
+		tmux_cmd display-message -p -t "$TMUX_PANE" "$format"
+	else
+		tmux_cmd display-message -p "$format"
+	fi
+}
+
+pane_directory() {
+	local pane=${1:-${TMUX_PANE:-}} directory pid
+	[[ -n $pane ]] || pane=$(current_format '#{pane_id}')
+	directory=$(tmux_cmd display-message -p -t "$pane" '#{pane_current_path}')
+	if [[ -z $directory ]]; then
+		# gVisor can reject TIOCGPGRP on the PTY master even though the pane
+		# process's cwd remains readable. This also tracks cd without a prompt.
+		pid=$(tmux_cmd display-message -p -t "$pane" '#{pane_pid}')
+		if [[ $pid =~ ^[0-9]+$ ]]; then
+			directory=$(readlink "/proc/$pid/cwd" 2>/dev/null || true)
+		fi
+	fi
+	printf '%s\n' "$directory"
+}
+
+canonical_directory() {
+	local directory=${1:-$PWD}
+	[[ -d $directory ]] || fail "directory does not exist: $directory"
+	(
+		cd "$directory"
+		pwd -P
+	)
+}
+
+workspace_root() {
+	local directory
+	local root
+	directory=$(canonical_directory "${1:-$PWD}")
+	if command -v git >/dev/null 2>&1; then
+		root=$(git -C "$directory" rev-parse --show-toplevel 2>/dev/null || true)
+		if [[ -n $root ]]; then
+			canonical_directory "$root"
+			return
+		fi
+	fi
+	printf '%s\n' "$directory"
+}
+
+sanitize_name() {
+	local raw=$1
+	local name
+	name=$(printf '%s' "$raw" |
+		LC_ALL=C tr '[:upper:]' '[:lower:]' |
+		LC_ALL=C sed -E 's/[^a-z0-9_-]+/-/g; s/^-+//; s/-+$//; s/-+/-/g')
+	[[ -n $name ]] || name=workspace
+	printf '%s\n' "$name"
+}
+
+default_name() {
+	local root=$1
+	local suffix=${2:-}
+	local base
+	base=${root##*/}
+	if [[ -n $suffix ]]; then
+		base="${base}-${suffix}"
+	fi
+	sanitize_name "$base"
+}
+
+prompt_value() {
+	local label=$1
+	local default_value=$2
+	local value=
+
+	if [[ -t 0 ]]; then
+		printf '%s [%s]: ' "$label" "$default_value" >&2
+		IFS= read -r value || true
+	fi
+	printf '%s\n' "${value:-$default_value}"
+}
+
+session_exists() {
+	local name=$1
+	tmux_cmd has-session -t "=$name" 2>/dev/null
+}
+
+session_rows() {
+	tmux_cmd list-sessions -F "$SESSION_FORMAT" 2>/dev/null || true
+}
+
+session_names() {
+	tmux_cmd list-sessions -F '#{session_name}' 2>/dev/null || true
+}
+
+choose_session_fzf() {
+	local selected
+	selected=$(
+		session_rows |
+			while IFS='|' read -r name windows clients kind root; do
+				[[ -n $name ]] || continue
+				printf '%s\t%s windows\t%s clients\t%s\t%s\n' \
+					"$name" "$windows" "$clients" "${kind:-manual}" "${root:--}"
+			done |
+			fzf \
+				--no-multi \
+				--layout=reverse \
+				--info=inline \
+				--border \
+				--prompt='workspace> ' \
+				--header='enter: open   esc: cancel' \
+				--delimiter="$TAB" \
+				--with-nth=1,2,3,4,5
+	) || return 1
+	printf '%s\n' "${selected%%"$TAB"*}"
+}
+
+choose_session_fallback() {
+	local names=()
+	local name
+	local choice
+	local index
+
+	while IFS= read -r name; do
+		[[ -n $name ]] && names[${#names[@]}]=$name
+	done < <(session_names)
+
+	((${#names[@]} > 0)) || return 1
+	[[ -t 0 ]] || fail "fzf is unavailable and no interactive terminal is attached"
+
+	printf 'Workspaces:\n' >&2
+	index=1
+	for name in "${names[@]}"; do
+		printf '  %d) %s\n' "$index" "$name" >&2
+		index=$((index + 1))
+	done
+	printf 'Select [1-%d]: ' "${#names[@]}" >&2
+	IFS= read -r choice || return 1
+	case $choice in
+	'' | *[!0-9]*) return 1 ;;
+	esac
+	((choice >= 1 && choice <= ${#names[@]})) || return 1
+	printf '%s\n' "${names[choice - 1]}"
+}
+
+choose_session() {
+	if command -v fzf >/dev/null 2>&1; then
+		choose_session_fzf
+	else
+		choose_session_fallback
+	fi
+}
+
+set_workspace_metadata() {
+	local target=$1
+	local kind=$2
+	local root=$3
+	local agents=${4:-}
+
+	# set-option resolves a target pane, then stores these user options at
+	# session scope. Passing a pane ID avoids ambiguous bare session targets.
+	tmux_cmd set-option -t "$target" @workspace_root "$root"
+	tmux_cmd set-option -t "$target" @workspace_kind "$kind"
+	if [[ -n $agents ]]; then
+		tmux_cmd set-option -t "$target" @workspace_agents "$agents"
+	fi
+}
+
+activate_session() {
+	local name=$1
+	if inside_tmux; then
+		tmux_cmd switch-client -t "=$name"
+	else
+		exec "$TMUX_BIN" attach-session -t "=$name"
+	fi
+}
+
+validate_pane_count() {
+	local count=$1
+	case $count in
+	'' | *[!0-9]*) fail "pane count must be an integer between 1 and 12" ;;
+	esac
+	((count >= 1 && count <= 12)) || fail "pane count must be between 1 and 12"
+}
+
+populate_agent_window() {
+	local window_id=$1
+	local root=$2
+	local count=$3
+	local pane_id
+	local index
+
+	index=2
+	while ((index <= count)); do
+		tmux_cmd split-window -d -t "$window_id" -c "$root"
+		index=$((index + 1))
+	done
+	tmux_cmd select-layout -t "$window_id" tiled >/dev/null
+
+	index=1
+	while IFS= read -r pane_id; do
+		[[ -n $pane_id ]] || continue
+		tmux_cmd select-pane -t "$pane_id" -T "agent-$index"
+		index=$((index + 1))
+	done < <(tmux_cmd list-panes -t "$window_id" -F '#{pane_id}')
+}
+
+command_list() {
+	local found=0
+	printf '%-24s %7s %7s %-10s %s\n' WORKSPACE WINDOWS CLIENTS KIND ROOT
+	while IFS='|' read -r name windows clients kind root; do
+		[[ -n $name ]] || continue
+		found=1
+		printf '%-24s %7s %7s %-10s %s\n' \
+			"$name" "$windows" "$clients" "${kind:-manual}" "${root:--}"
+	done < <(session_rows)
+	((found == 1)) || printf '%s\n' '(no tmux workspaces)'
+}
+
+command_new() {
+	local detached=0
+	local requested_name=
+	local requested_directory=
+	local root
+	local name
+	local target
+
+	if [[ ${1:-} == --detached ]]; then
+		detached=1
+		shift
+	fi
+	requested_name=${1:-}
+	requested_directory=${2:-}
+	root=$(workspace_root "${requested_directory:-$PWD}")
+	if [[ -z $requested_name ]]; then
+		requested_name=$(prompt_value 'Workspace name' "$(default_name "$root")")
+	fi
+	name=$(sanitize_name "$requested_name")
+
+	if session_exists "$name"; then
+		printf 'Workspace already exists: %s\n' "$name" >&2
+		((detached == 1)) || activate_session "$name"
+		return
+	fi
+
+	target=$(tmux_cmd new-session -d -P -F '#{session_name}:#{window_index}.#{pane_index}' \
+		-s "$name" -c "$root" -n main)
+	tmux_cmd select-pane -t "$target" -T shell
+	set_workspace_metadata "$target" standard "$root"
+	printf 'Created workspace %s at %s\n' "$name" "$root" >&2
+	((detached == 1)) || activate_session "$name"
+}
+
+command_agent() {
+	local detached=0
+	local requested_name=
+	local requested_directory=
+	local count=4
+	local root
+	local name
+	local control_pane
+	local control_window
+	local session_id
+	local agents_window
+
+	if [[ ${1:-} == --detached ]]; then
+		detached=1
+		shift
+	fi
+	requested_name=${1:-}
+	requested_directory=${2:-}
+	count=${3:-4}
+	validate_pane_count "$count"
+	root=$(workspace_root "${requested_directory:-$PWD}")
+	if [[ -z $requested_name ]]; then
+		requested_name=$(prompt_value 'Agent workspace name' "$(default_name "$root" agents)")
+	fi
+	name=$(sanitize_name "$requested_name")
+
+	if session_exists "$name"; then
+		printf 'Workspace already exists: %s\n' "$name" >&2
+		((detached == 1)) || activate_session "$name"
+		return
+	fi
+
+	control_pane=$(tmux_cmd new-session -d -P -F '#{pane_id}' \
+		-s "$name" -c "$root" -n control)
+	tmux_cmd select-pane -t "$control_pane" -T orchestrator
+	control_window=$(tmux_cmd display-message -p -t "$control_pane" '#{window_id}')
+	session_id=$(tmux_cmd display-message -p -t "$control_pane" '#{session_id}')
+	agents_window=$(tmux_cmd new-window -d -P -F '#{window_id}' \
+		-t "${session_id}:" -c "$root" -n agents)
+	populate_agent_window "$agents_window" "$root" "$count"
+	tmux_cmd select-window -t "$control_window"
+	set_workspace_metadata "$control_pane" agents "$root" "$count"
+	printf 'Created agent workspace %s with %s agent panes at %s\n' \
+		"$name" "$count" "$root" >&2
+	((detached == 1)) || activate_session "$name"
+}
+
+window_name_exists() {
+	local session_id=$1
+	local wanted=$2
+	local existing
+	while IFS= read -r existing; do
+		[[ $existing == "$wanted" ]] && return 0
+	done < <(tmux_cmd list-windows -t "$session_id" -F '#{window_name}')
+	return 1
+}
+
+unique_window_name() {
+	local session_id=$1
+	local base=$2
+	local candidate=$base
+	local suffix=2
+	while window_name_exists "$session_id" "$candidate"; do
+		candidate="${base}-${suffix}"
+		suffix=$((suffix + 1))
+	done
+	printf '%s\n' "$candidate"
+}
+
+command_worktree() {
+	local pane=${1:-${TMUX_PANE:-}}
+	local directory session_id root worktree branch parent
+	[[ -n $pane ]] || fail "worktree requires a source tmux pane"
+	directory=$(pane_directory "$pane")
+	session_id=$(tmux_cmd display-message -p -t "$pane" '#{session_id}')
+	[[ -d $directory && -n $session_id ]] || fail "source pane is unavailable"
+
+	# Query Git here instead of inserting a pane path into a shell command.
+	# mktemp reserves a unique, empty sibling directory that Git can populate.
+	root=$(git -C "$directory" rev-parse --show-toplevel 2>/dev/null || true)
+	if [[ -n $root ]]; then
+		parent=$(git -C "$directory" symbolic-ref --quiet --short HEAD || true)
+		if worktree=$(mktemp -d "${root}-worktree.XXXXXX"); then
+			branch="worktree/$(sanitize_name "${worktree##*/}")"
+			if git -C "$directory" worktree add --quiet -b "$branch" "$worktree" HEAD; then
+				if [[ -n $parent ]]; then
+					git -C "$directory" config --local "branch.$branch.tmux-parent" "$parent"
+				fi
+				tmux_cmd new-window -t "${session_id}:" -c "$worktree" -n "$branch"
+				return
+			fi
+			# Never recursively remove a directory after a failed Git operation.
+			rmdir "$worktree" 2>/dev/null || true
+		fi
+		printf '%s\n' 'Worktree creation failed; opening a normal window.' >&2
+	fi
+	tmux_cmd new-window -t "${session_id}:" -c "$directory"
+}
+
+linked_worktree_root() {
+	local pane=$1 directory root git_dir common_dir
+	[[ -n $pane ]] || fail "a source tmux pane is required"
+	directory=$(pane_directory "$pane")
+	root=$(git -C "$directory" rev-parse --show-toplevel 2>/dev/null) || fail "pane is not in a Git worktree"
+	git_dir=$(git -C "$root" rev-parse --absolute-git-dir)
+	common_dir=$(git -C "$root" rev-parse --git-common-dir)
+	[[ $common_dir == /* ]] || common_dir="$root/$common_dir"
+	[[ $(canonical_directory "$git_dir") != "$(canonical_directory "$common_dir")" ]] ||
+		fail "refusing to operate on the main checkout"
+	canonical_directory "$root"
+}
+
+require_clean_worktree() {
+	local root=$1 ignored=${2:-no} state path changes
+	for state in MERGE_HEAD CHERRY_PICK_HEAD REVERT_HEAD BISECT_LOG rebase-merge rebase-apply sequencer; do
+		path=$(git -C "$root" rev-parse --git-path "$state")
+		[[ $path == /* ]] || path="$root/$path"
+		[[ ! -e $path ]] || fail "Git operation in progress at $root ($state)"
+	done
+	changes=$(git -C "$root" status --porcelain --untracked-files=all --ignored="$ignored")
+	[[ -z $changes ]] || fail "worktree has uncommitted, untracked, or protected ignored files: $root"
+}
+
+command_worktree_merge() {
+	local pane=${1:-${TMUX_PANE:-}} root branch parent entry checkout='' parent_root=''
+	root=$(linked_worktree_root "$pane")
+	branch=$(git -C "$root" symbolic-ref --quiet --short HEAD) || fail "cannot merge a detached HEAD"
+	parent=$(git -C "$root" config --local --get "branch.$branch.tmux-parent") ||
+		fail "no recorded parent for $branch; set branch.$branch.tmux-parent explicitly with git config --local"
+	[[ $parent != "$branch" ]] || fail "worktree cannot be its own parent"
+	git -C "$root" show-ref --verify --quiet "refs/heads/$parent" || fail "parent branch no longer exists: $parent"
+	while IFS= read -r -d '' entry; do
+		case $entry in
+		worktree\ *) checkout=${entry#worktree } ;;
+		"branch refs/heads/$parent") parent_root=$checkout ;;
+		esac
+	done < <(git -C "$root" worktree list --porcelain -z)
+	[[ -n $parent_root && $parent_root != "$root" ]] || fail "parent branch must be checked out: $parent"
+	require_clean_worktree "$root"
+	require_clean_worktree "$parent_root"
+	git -C "$parent_root" merge --quiet --no-edit "refs/heads/$branch" ||
+		fail "merge did not complete; inspect $parent_root and resolve conflicts there or run git merge --abort"
+}
+
+command_worktree_remove() {
+	local pane=${1:-${TMUX_PANE:-}} root branch other directory
+	root=$(linked_worktree_root "$pane")
+	branch=$(git -C "$root" symbolic-ref --quiet --short HEAD) || fail "refusing to remove a detached HEAD; create a branch first"
+	require_clean_worktree "$root" matching
+	while IFS= read -r other; do
+		[[ $other != "$pane" ]] || continue
+		directory=$(pane_directory "$other")
+		[[ $directory != "$root" && $directory != "$root/"* ]] ||
+			fail "another tmux pane ($other) is using $root; move it out first"
+	done < <(tmux_cmd list-panes -a -F '#{pane_id}')
+	# Git refuses locked/dirty worktrees. Never force deletion or delete the branch.
+	git -C "$root" worktree remove -- "$root"
+	tmux_cmd kill-pane -t "$pane"
+}
+
+command_grid() {
+	local count=${1:-4}
+	local requested_name=${2:-agents}
+	local requested_directory=${3:-}
+	local session_id
+	local root
+	local name
+	local window_id
+
+	inside_tmux || fail "grid must be run from inside tmux"
+	validate_pane_count "$count"
+	session_id=$(current_format '#{session_id}')
+	if [[ -n $requested_directory ]]; then
+		root=$(workspace_root "$requested_directory")
+	else
+		root=$(workspace_root "$(pane_directory)")
+	fi
+	name=$(unique_window_name "$session_id" "$(sanitize_name "$requested_name")")
+	window_id=$(tmux_cmd new-window -d -P -F '#{window_id}' \
+		-t "${session_id}:" -c "$root" -n "$name")
+	populate_agent_window "$window_id" "$root" "$count"
+	tmux_cmd select-window -t "$window_id"
+	printf 'Created %s with %s tiled panes\n' "$name" "$count" >&2
+}
+
+select_or_use_name() {
+	local name=${1:-}
+	if [[ -z $name ]]; then
+		name=$(choose_session) || return 1
+	fi
+	printf '%s\n' "$name"
+}
+
+command_switch() {
+	local name
+	if ! name=$(select_or_use_name "${1:-}"); then
+		printf '%s\n' 'No workspace selected.' >&2
+		return 1
+	fi
+	session_exists "$name" || fail "workspace does not exist: $name"
+	activate_session "$name"
+}
+
+command_attach() {
+	if [[ -z $(session_names) && -z ${1:-} ]]; then
+		command_new
+		return
+	fi
+	command_switch "${1:-}"
+}
+
+command_kill() {
+	local force=0
+	local name=
+	local answer=
+
+	if [[ ${1:-} == --force ]]; then
+		force=1
+		shift
+	fi
+	if ! name=$(select_or_use_name "${1:-}"); then
+		printf '%s\n' 'No workspace selected.' >&2
+		return 1
+	fi
+	session_exists "$name" || fail "workspace does not exist: $name"
+
+	if ((force == 0)); then
+		[[ -t 0 ]] || fail "refusing to remove $name without --force in a non-interactive shell"
+		printf 'Remove workspace %s and all of its processes? [y/N] ' "$name" >&2
+		IFS= read -r answer || true
+		case $answer in
+		y | Y | yes | YES) ;;
+		*)
+			printf '%s\n' 'Cancelled.' >&2
+			return
+			;;
+		esac
+	fi
+
+	tmux_cmd kill-session -t "=$name"
+	printf 'Removed workspace %s\n' "$name" >&2
+}
+
+command_rename() {
+	local old_name
+	local requested_name=${1:-}
+	local new_name
+
+	if inside_tmux; then
+		old_name=$(current_format '#{session_name}')
+	else
+		old_name=$(choose_session) || fail "no workspace selected"
+	fi
+	if [[ -z $requested_name ]]; then
+		requested_name=$(prompt_value 'New workspace name' "$old_name")
+	fi
+	new_name=$(sanitize_name "$requested_name")
+	[[ $new_name == "$old_name" ]] && return
+	session_exists "$new_name" && fail "workspace already exists: $new_name"
+	tmux_cmd rename-session -t "=$old_name" "$new_name"
+	printf 'Renamed workspace %s to %s\n' "$old_name" "$new_name" >&2
+}
+
+command_keys() {
+	local pause=0
+	[[ ${1:-} == --pause ]] && pause=1
+	cat <<'KEYS'
+Prefixless tmux controls (Hyper = Caps Lock / ⌃⌥⇧⌘)
+
+Workspaces                         Panes
+  Hyper-s     select/switch          Hyper-h/j/k/l  move focus
+  Hyper-a     attach/switch          Hyper-;        last pane
+  Hyper-n     create standard        Hyper-arrows   resize by 5
+  Hyper-e     create agent layout    Hyper--        split horizontal
+  Hyper-q     remove workspace       Hyper-|        split vertical
+  Hyper-d     detach                 Hyper-x        remove pane
+  Hyper-r     rename workspace       Hyper-z        zoom pane
+                                      Hyper-p        show pane numbers
+Windows                               Hyper-t        rename pane
+  Hyper-c     create window           Hyper-b        break pane to window
+  Hyper-Enter new worktree window
+  Hyper-w     choose window/tree      Hyper-m / v    mark pane / join here
+  Hyper-, / . previous / next
+  Hyper-Tab   last window           Agents and utility
+  Hyper-i     rename window           Hyper-f        next window needing attention
+  Hyper-⌫     remove window           Hyper-g        add 4-pane agent grid
+  Hyper-1..9  select window           Hyper-y        broadcast input toggle
+                                      Hyper-u        pick path/URL/token (extrakto)
+Text                                  Hyper-o        scratch popup
+  Hyper-[     copy mode / scroll      Hyper-/        this reference
+  Hyper-]     paste buffer            Ctrl-a ?       this reference
+
+Ctrl-a remains as the prefix for uncommon tmux commands.
+  Ctrl-a r   reload config      Ctrl-a R   restart dead pane
+  Ctrl-a P   toggle pane log    Ctrl-a I   install tpm plugins
+  Ctrl-a W   new worktree window (normal window outside Git)
+  Ctrl-a F9 / Hyper-F9    merge worktree into recorded parent (confirm)
+  Ctrl-a F10 / Hyper-F10  remove worktree and pane; keep branch (confirm)
+Hyper already includes Shift, so there is no Hyper-Shift layer.
+KEYS
+	if ((pause == 1)) && [[ -t 0 ]]; then
+		printf '\nPress Enter to close…' >&2
+		IFS= read -r _ || true
+	fi
+}
+
+main() {
+	local command=${1:-attach}
+	[[ $# -gt 0 ]] && shift
+	case $command in
+	keys) command_keys "$@" ;;
+	help | -h | --help) usage ;;
+	list | ls)
+		require_tmux
+		command_list "$@"
+		;;
+	new | create)
+		require_tmux
+		command_new "$@"
+		;;
+	agent | agents)
+		require_tmux
+		command_agent "$@"
+		;;
+	grid)
+		require_tmux
+		command_grid "$@"
+		;;
+	worktree)
+		require_tmux
+		command_worktree "$@"
+		;;
+	worktree-merge)
+		require_tmux
+		command_worktree_merge "$@"
+		;;
+	worktree-remove)
+		require_tmux
+		command_worktree_remove "$@"
+		;;
+	switch | select)
+		require_tmux
+		command_switch "$@"
+		;;
+	attach | a)
+		require_tmux
+		command_attach "$@"
+		;;
+	kill | remove | rm)
+		require_tmux
+		command_kill "$@"
+		;;
+	rename | mv)
+		require_tmux
+		command_rename "$@"
+		;;
+	*)
+		usage >&2
+		fail "unknown command: $command"
+		;;
+	esac
+}
+
+main "$@"

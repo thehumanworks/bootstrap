@@ -1,9 +1,9 @@
 import json
 import re
-import tomllib
 import unittest
 from pathlib import Path
 
+import tomllib
 
 REPOSITORY = Path(__file__).resolve().parents[1]
 
@@ -22,6 +22,7 @@ HOST_APT_PACKAGES = (
     "iproute2",
     "dnsutils",
     "iputils-ping",
+    "ncurses-term",
 )
 
 PACKAGE_MANAGER_TOOLS = ("pnpm", "yarn", "npm:corepack")
@@ -57,6 +58,37 @@ class BootstrapContractTests(unittest.TestCase):
         for name in HOST_APT_PACKAGES:
             self.assertEqual(packages[f"apt:{name}"], "latest")
 
+    def test_tmux_bindings_have_their_installed_helpers(self) -> None:
+        dotfiles = self.parsed["dotfiles"]
+        targets = {
+            "~/.config/tmux/tmux.conf": "dotfiles/tmux/tmux.conf",
+            "~/.local/bin/tw": "scripts/tmux-workspace",
+            "~/.local/bin/agent-tmux-state": "scripts/agent-tmux-state",
+            "~/.local/bin/claude-tmux-state": "scripts/agent-tmux-state",
+            "~/.local/lib/tmux/install-tmux-plugins.sh": "scripts/install-tmux-plugins.sh",
+            "~/.local/lib/tmux/reload-tmux-config.sh": "scripts/reload-tmux-config.sh",
+            "~/.local/lib/tmux/tmux-prompt.bash": "scripts/tmux-prompt.bash",
+        }
+        for target, source in targets.items():
+            self.assertEqual(dotfiles[target], {"source": source, "mode": "symlink"})
+            self.assertTrue((REPOSITORY / source).is_file())
+        for name in ("tmux", "python", "fzf"):
+            self.assertIn(name, self.parsed["tools"])
+        for target in ("~/.bashrc/tmux-cwd", "~/.bash_profile/tmux-cwd"):
+            self.assertIn("tmux-prompt.bash", dotfiles[target]["block"])
+
+    def test_tmux_hooks_do_not_depend_on_the_workstation_checkout(self) -> None:
+        for script in (
+            self.parsed["bootstrap"]["hooks"]["post-dotfiles"]["run"],
+            self.parsed["tasks"]["update-tmux-plugins"]["run"],
+        ):
+            self.assertNotIn("$HOME/.config/mise/scripts", script)
+            self.assertNotIn("{{", script)
+            self.assertIn("set -eu", script)
+            for name in ("install-tmux-plugins.sh", "reload-tmux-config.sh"):
+                self.assertIn("$HOME/.local/lib/tmux/" + name, script)
+                self.assertTrue((REPOSITORY / "scripts" / name).is_file())
+
     def test_package_managers_and_json_tools_are_pinned(self) -> None:
         tools = self.parsed["tools"]
         for name in PACKAGE_MANAGER_TOOLS + JSON_TOOLS:
@@ -68,11 +100,13 @@ class BootstrapContractTests(unittest.TestCase):
             self.config,
             re.compile(
                 r'^"~/.claude/CLAUDE\.md" = '
-                r'\{ source = "\.claude/CLAUDE\.md", mode = "symlink" \}$',
+                r'\{ source = "dotfiles/claude/CLAUDE\.md", mode = "symlink" \}$',
                 re.MULTILINE,
             ),
         )
-        claude_md = (REPOSITORY / ".claude" / "CLAUDE.md").read_text(encoding="utf-8")
+        claude_md = (REPOSITORY / "dotfiles" / "claude" / "CLAUDE.md").read_text(
+            encoding="utf-8"
+        )
         for needle in ("mise", "fnox", "1 vCPU", "packageManager"):
             self.assertIn(needle, claude_md)
 
@@ -99,11 +133,13 @@ class BootstrapContractTests(unittest.TestCase):
             self.config,
             re.compile(
                 r'^"~/.claude\.json" = '
-                r'\{ source = "\.claude\.json", mode = "copy" \}$',
+                r'\{ source = "dotfiles/claude/\.claude\.json", mode = "copy" \}$',
                 re.MULTILINE,
             ),
         )
-        with (REPOSITORY / ".claude.json").open(encoding="utf-8") as state_file:
+        with (REPOSITORY / "dotfiles" / "claude" / ".claude.json").open(
+            encoding="utf-8"
+        ) as state_file:
             self.assertEqual(json.load(state_file), {"hasCompletedOnboarding": True})
 
 

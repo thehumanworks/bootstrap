@@ -88,9 +88,22 @@ login_shell = "/bin/bash"
 "apt:iproute2" = "latest"
 "apt:dnsutils" = "latest"
 "apt:iputils-ping" = "latest"
+# tmux-256color for minimal Linux images and nested terminal clients.
+"apt:ncurses-term" = "latest"
 
 [dotfiles]
 "~/.config/mise/config.toml" = { source = "mise.toml", mode = "symlink" }
+# Shared tmux keys, workspaces and optional agent-state reporting (docs/tmux.md).
+"~/.config/tmux/tmux.conf" = { source = "dotfiles/tmux/tmux.conf", mode = "symlink" }
+"~/.local/bin/tw" = { source = "scripts/tmux-workspace", mode = "symlink" }
+"~/.local/bin/agent-tmux-state" = { source = "scripts/agent-tmux-state", mode = "symlink" }
+"~/.local/bin/claude-tmux-state" = { source = "scripts/agent-tmux-state", mode = "symlink" }
+# Stable hook paths also work on Mise versions without hook template expansion.
+"~/.local/lib/tmux/install-tmux-plugins.sh" = { source = "scripts/install-tmux-plugins.sh", mode = "symlink" }
+"~/.local/lib/tmux/reload-tmux-config.sh" = { source = "scripts/reload-tmux-config.sh", mode = "symlink" }
+"~/.local/lib/tmux/tmux-prompt.bash" = { source = "scripts/tmux-prompt.bash", mode = "symlink" }
+"~/.bashrc/tmux-cwd" = { block = 'source "$HOME/.local/lib/tmux/tmux-prompt.bash"' }
+"~/.bash_profile/tmux-cwd" = { block = 'source "$HOME/.local/lib/tmux/tmux-prompt.bash"' }
 # settings.json is copied, not symlinked: Claude Code rewrites it at runtime
 # (/model, /config), and a symlink would silently dirty this checkout.
 "~/.claude/settings.json" = { source = "dotfiles/claude/settings.json", mode = "copy" }
@@ -169,6 +182,43 @@ tailscale --socket="$socket" ip -4
 description = "Bootstrap contract tests"
 dir = "{{ config_root }}"
 run = "python -m unittest discover -s tests -v"
+
+[tasks."keyboard:setup"]
+description = "Install and enable Caps Lock Hyper on a Linux desktop"
+dir = "{{ config_root }}"
+raw = true
+run = '''
+set -eu
+if ! command -v systemctl >/dev/null 2>&1 || ! systemctl show --property=Version >/dev/null 2>&1; then
+  echo "keyboard:setup requires a Linux keyboard host running systemd." >&2
+  exit 1
+fi
+mise -E keyboard-linux bootstrap packages apply --yes apt:keyd
+mise -E keyboard-linux bootstrap files apply --yes
+mise -E keyboard-linux bootstrap services apply --yes
+'''
+
+# Dotfiles link these helpers to this checkout, wherever it was cloned.
+# Ordinary bootstrap installs missing plugins; updates remain explicit.
+[bootstrap.hooks.post-dotfiles]
+run = '''
+set -eu
+/bin/sh "$HOME/.local/lib/tmux/install-tmux-plugins.sh"
+/bin/sh "$HOME/.local/lib/tmux/reload-tmux-config.sh"
+'''
+
+[tasks.update-tmux-plugins]
+description = "Update tmux plugins and reload the running server"
+run = '''
+set -eu
+/bin/sh "$HOME/.local/lib/tmux/install-tmux-plugins.sh" --update
+/bin/sh "$HOME/.local/lib/tmux/reload-tmux-config.sh"
+'''
+
+[tasks.test-tmux]
+description = "Test tmux keys, workspaces and nested sessions on isolated servers"
+dir = "{{ config_root }}"
+run = "bash scripts/test_tmux.sh"
 
 [settings]
 minimum_release_age = "0"
