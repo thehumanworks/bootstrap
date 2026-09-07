@@ -93,11 +93,11 @@ login_shell = "/bin/bash"
 "~/.config/mise/config.toml" = { source = "mise.toml", mode = "symlink" }
 # settings.json is copied, not symlinked: Claude Code rewrites it at runtime
 # (/model, /config), and a symlink would silently dirty this checkout.
-"~/.claude/settings.json" = { source = "dotfiles/claude.settings.json", mode = "copy" }
-"~/.claude/CLAUDE.md" = { source = "dotfiles/CLAUDE.md", mode = "symlink" }
-"~/.claude.json" = { source = "dotfiles/claude.claude.json", mode = "copy" }
+"~/.claude/settings.json" = { source = "dotfiles/claude/settings.json", mode = "copy" }
+"~/.claude/CLAUDE.md" = { source = "dotfiles/claude/CLAUDE.md", mode = "symlink" }
+"~/.claude.json" = { source = "dotfiles/claude/.claude.json", mode = "copy" }
 # Copied for the same reason: codex writes memories/trust entries into it.
-"~/.codex/config.toml" = { source = "dotfiles/codex.config.toml", mode = "copy" }
+"~/.codex/config.toml" = { source = "dotfiles/codex/config.toml", mode = "copy" }
 "~/.config/mise/conf.d/secret-tools.toml" = { content = '''
 [tools]
 fnox = "1.34.1"
