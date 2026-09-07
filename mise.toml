@@ -2,29 +2,29 @@
 # Language Runtimes
 python = "3.14.7"
 node = "26.8.1"
-bun = "1.4.0"
+bun = "1.4.2"
 deno = "2.9.6"
 go = "1.27.1"
-rust = "1.98.0"
-uv = "0.12.9"
-pnpm = "12.3.1"
+rust = "1.98.1"
+uv = "0.12.10"
+pnpm = "12.3.4"
 yarn = "4.18.0"
 "npm:corepack" = "0.36.0"
-shfmt = "3.14.0"
-ruff = "0.16.5"
+shfmt = "3.14.1"
+ruff = "0.16.6"
 jq = "1.8.2"
 shellcheck = "0.11.0"
 taplo = "0.10.0"
 git-lfs = "3.8.0"
 # Secret Management
-fnox = "1.34.1"
+fnox = "1.35.1"
 age = "1.3.2"
 1password = "2.39.0"
 doppler = "3.76.5"
 # Dev Tools
 tmux = "3.7c"
 herdr = "0.8.2"
-gh = "2.99.0"
+gh = "2.100.0"
 just = "1.58.0"
 yq = "4.53.6"
 fd = "10.5.0"
@@ -34,7 +34,7 @@ fzf = "0.74.3"
 bat = "0.26.1"
 eza = "0.23.5"
 # Agent Harnesses
-"npm:@openai/codex" = "alpha"
+"npm:@openai/codex" = "0"
 # tny <= 0.4.0 ships *.provenance.json release assets that are SDK metadata,
 # not sigstore attestations; an old mise once recorded one as provenance.slsa
 # in mise.lock, tripping the provenance-downgrade guard on upgrades. If that
@@ -45,7 +45,7 @@ eza = "0.23.5"
 "aqua:tailscale/tailscale" = { version = "1.102.3", os = ["linux"] }
 
 [tools."http:claude"]
-version = "2.1.258"
+version = "2.1.263"
 url = 'https://downloads.claude.ai/claude-code-releases/{{ version }}/{{ os(macos="darwin") }}-{{ arch() }}/claude'
 version_list_url = "https://downloads.claude.ai/claude-code-releases/latest"
 checksum_url = "https://downloads.claude.ai/claude-code-releases/{{ version }}/manifest.json"
@@ -93,11 +93,11 @@ login_shell = "/bin/bash"
 "~/.config/mise/config.toml" = { source = "mise.toml", mode = "symlink" }
 # settings.json is copied, not symlinked: Claude Code rewrites it at runtime
 # (/model, /config), and a symlink would silently dirty this checkout.
-"~/.claude/settings.json" = { source = ".claude/settings.json", mode = "copy" }
-"~/.claude/CLAUDE.md" = { source = ".claude/CLAUDE.md", mode = "symlink" }
-"~/.claude.json" = { source = ".claude.json", mode = "copy" }
+"~/.claude/settings.json" = { source = "dotfiles/claude.settings.json", mode = "copy" }
+"~/.claude/CLAUDE.md" = { source = "dotfiles/CLAUDE.md", mode = "symlink" }
+"~/.claude.json" = { source = "dotfiles/claude.claude.json", mode = "copy" }
 # Copied for the same reason: codex writes memories/trust entries into it.
-"~/.codex/config.toml" = { source = ".codex/config.toml", mode = "copy" }
+"~/.codex/config.toml" = { source = "dotfiles/codex.config.toml", mode = "copy" }
 "~/.config/mise/conf.d/secret-tools.toml" = { content = '''
 [tools]
 fnox = "1.34.1"
