@@ -6,6 +6,11 @@ default_provider = "op"
 [providers.op]
 type = "1password"
 
+[providers.doppler]
+type = "doppler"
+project = "ai"
+config = "prd"
+
 [secrets]
 GH_TOKEN = { provider = "op", value = "op://vault/github/token" }
 TAILSCALE_AUTHKEY = { provider = "op", value = "op://vault/tailscale/authkey" }
@@ -16,3 +21,6 @@ AIPROXY_BASE_URL = { provider = "op", value = "op://vault/aiproxy/api/url" }
 AIPROXY_API_KEY = { provider = "op", value = "op://vault/aiproxy/api/key" }
 OPENROUTER_API_KEY = { provider = "op", value = "op://vault/openrouter/api/key" }
 OPENROUTER_BASE_URL = { provider = "op", value = "op://vault/openrouter/api/url" }
+CHATGPT_ACCOUNT_ID = { provider = "doppler", value = "CHATGPT_ACCOUNT_ID"}
+CHATGPT_AUTH_TOKEN = { provider = "doppler", value = "CHATGPT_AUTH_TOKEN"}
+CHATGPT_BACKEND_URL = { provider = "doppler", value = "CHATGPT_BACKEND_URL"}
