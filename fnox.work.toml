@@ -7,7 +7,9 @@ default_provider = "op"
 type = "1password"
 
 [secrets]
+# LeadForensics github token. Hostname: leadforensics.ghe.com
 GITHUB_TOKEN = { provider = "op", value = "op://vault/github/leadforensics/token" }
+# Github PAT token to prevent rate limiting when using mise to download github packages
 MISE_GITHUB_TOKEN = { provider = "op", value = "op://vault/github/token" }
 TAILSCALE_AUTHKEY = { provider = "op", value = "op://vault/tailscale/authkey" }
 CLAUDE_CODE_OAUTH_TOKEN = { provider = "op", value = "op://vault/claude/oauth/token" }
@@ -17,3 +19,7 @@ AIPROXY_BASE_URL = { provider = "op", value = "op://vault/aiproxy/api/url" }
 AIPROXY_API_KEY = { provider = "op", value = "op://vault/aiproxy/api/key" }
 OPENROUTER_API_KEY = { provider = "op", value = "op://vault/openrouter/api/key" }
 OPENROUTER_BASE_URL = { provider = "op", value = "op://vault/openrouter/api/url" }
+# Atlassian credentials for API / MCP use.
+ATLASSIAN_API_TOKEN = { provider = "op", value = "op://vault/atlassian/api/token" }
+ATLASSIAN_BASE_URL = { provider = "op", value = "op://vault/atlassian/api/url" }
+ATLASSIAN_EMAIL = { provider = "op", value = "op://vault/atlassian/email" }
