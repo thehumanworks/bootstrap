@@ -7,7 +7,8 @@ default_provider = "op"
 type = "1password"
 
 [secrets]
-GH_TOKEN = { provider = "op", value = "op://lf/github/token" }
+GITHUB_TOKEN = { provider = "op", value = "op://vault/github/leadforensics/token" }
+MISE_GITHUB_TOKEN = { provider = "op", value = "op://vault/github/token" }
 TAILSCALE_AUTHKEY = { provider = "op", value = "op://vault/tailscale/authkey" }
 CLAUDE_CODE_OAUTH_TOKEN = { provider = "op", value = "op://vault/claude/oauth/token" }
 # The bootstrap task bakes AIPROXY_BASE_URL into codex's aiproxy provider;
