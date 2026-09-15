@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+"""Authenticate one ACLI invocation without retaining its credential store."""
+
+import os
+import subprocess
+import sys
+import tempfile
+from urllib.parse import urlparse
+
+arguments = sys.argv[1:]
+if not arguments or arguments[0] not in ("jira", "confluence"):
+    os.execvp("acli", ["acli", *arguments])
+
+site = os.environ["ATLASSIAN_BASE_URL"]
+site = urlparse(site if "://" in site else "https://" + site).hostname
+if not site:
+    sys.exit("ATLASSIAN_BASE_URL must name an Atlassian site")
+
+with tempfile.TemporaryDirectory(prefix="acli-work-") as config:
+    environment = {**os.environ, "ACLI_CONFIG_DIR": config}
+    login = subprocess.run(
+        [
+            "acli",
+            arguments[0],
+            "auth",
+            "login",
+            "--site",
+            site,
+            "--email",
+            os.environ["ATLASSIAN_EMAIL"],
+            "--token",
+        ],
+        input=os.environ["ATLASSIAN_API_TOKEN"],
+        text=True,
+        capture_output=True,
+        check=False,
+        env=environment,
+        timeout=60,
+    )
+    if login.returncode:
+        sys.exit(f"Atlassian authentication failed (exit {login.returncode})")
+    result = subprocess.run(["acli", *arguments], env=environment, check=False)
+sys.exit(result.returncode)
