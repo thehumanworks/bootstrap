@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+"""Connect stdio clients to Atlassian's official MCP using runtime-only auth."""
+
+import base64
+import os
+
+credentials = f"{os.environ['ATLASSIAN_EMAIL']}:{os.environ['ATLASSIAN_API_TOKEN']}"
+os.environ["ATLASSIAN_MCP_AUTH"] = (
+    "Basic " + base64.b64encode(credentials.encode()).decode()
+)
+os.execvp(
+    "mcp-remote",
+    [
+        "mcp-remote",
+        "https://mcp.atlassian.com/v2/mcp",
+        "--header",
+        "Authorization:${ATLASSIAN_MCP_AUTH}",
+        "--transport",
+        "http-only",
+        "--silent",
+    ],
+)

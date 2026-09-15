@@ -1,0 +1,20 @@
+{
+  "hasCompletedOnboarding": true,
+  "mcpServers": {
+    "atlassian": {
+      "type": "stdio",
+      "command": "fnox",
+      "args": [
+        "run",
+        "--profile",
+        "work-atlassian",
+        "--no-defaults",
+        "--if-missing",
+        "error",
+        "--non-interactive",
+        "--",
+        "atlassian-mcp"
+      ]
+    }
+  }
+}

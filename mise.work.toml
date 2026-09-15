@@ -1,10 +1,31 @@
 [env]
 GH_HOST = "leadforensics.ghe.com"
+FNOX_PROFILE = "work"
+FNOX_NO_DEFAULTS = "true"
 
 [dotfiles]
 "~/.config/fnox/config.toml" = { source = "fnox.work.toml", mode = "symlink" }
 "~/.gitconfig" = { source = ".gitconfig.work", mode = "copy" }
+"~/.local/bin/acli-work" = { source = "scripts/acli-work", mode = "symlink" }
+"~/.local/bin/atlassian-mcp" = { source = "scripts/atlassian-mcp", mode = "symlink" }
+"~/.claude.json" = { source = "dotfiles/claude/.claude.work.json", mode = "copy" }
 
-[bootstrap.hooks.final]
-description = "Configure work GitHub credentials"
-run = "mise exec -- fnox exec -- gh auth setup-git --hostname leadforensics.ghe.com"
+[tools]
+acli = "1.3.36-stable"
+"npm:mcp-remote" = "0.14.2"
+
+# Fail closed on work auth; do not resolve unrelated AI/Atlassian secrets.
+[wrappers.gh]
+command = "fnox"
+args = ["run", "--profile", "work-github", "--no-defaults", "--if-missing", "error", "--non-interactive", "--", "gh"]
+
+[wrappers.acli]
+command = "fnox"
+args = ["run", "--profile", "work-atlassian", "--no-defaults", "--if-missing", "error", "--non-interactive", "--", "acli-work"]
+
+[bootstrap.hooks.post-tools]
+description = "Register the work Atlassian MCP using runtime fnox credentials"
+run = '''
+set -eu
+mise exec -- codex mcp add atlassian -- fnox run --profile work-atlassian --no-defaults --if-missing error --non-interactive -- atlassian-mcp
+'''

@@ -12,3 +12,10 @@
   smudge = git-lfs smudge -- %f
   process = git-lfs filter-process
   required = true
+
+[credential "https://leadforensics.ghe.com"]
+  helper =
+  helper = !fnox run --profile work-github --no-defaults --if-missing error --non-interactive -- gh auth git-credential
+[credential "https://github.com"]
+  helper =
+  helper = !f() { echo username=x-access-token; echo "password=$MISE_GITHUB_TOKEN"; }; f
