@@ -75,3 +75,21 @@ Reviewed 2026-09-15:
 - [Official Atlassian MCP authentication](https://atlassian.github.io/atlassian-mcp-server/)
 - [Official ACLI stdin login](https://developer.atlassian.com/cloud/acli/reference/commands/jira-auth-login/)
 - [MCP Atlassian configuration](https://github.com/sooperset/mcp-atlassian/blob/main/docs/configuration.mdx)
+
+## Tool release refresh
+
+Both base/dev and LF/work use the shared tool versions in `mise.toml`;
+`mise.work.toml` adds ACLI and MCP Atlassian. All 37 tools were checked against
+their backend's latest stable release on 2026-09-15. Exact requests and native
+lockfiles record that snapshot. Some tools were already at the latest release.
+
+For the next refresh, inspect `mise -E work outdated --bump --local` and update
+the shared and work version requests. Refresh both native lockfiles with
+`mise -E work lock --bump`. Commit the generated `.mise/locks/` bundle too:
+it holds MCP Atlassian's locked Python dependencies. Keep the embedded
+`secret-tools.toml` fnox and 1Password versions aligned with the shared tools.
+
+The sandboxes image launcher is generated with `mise generate install-script`
+from the selected current mise release. Its latest-tools live verifier checks
+all 35 shared tools in both images, both LF-only tools, and the mise binary.
+The regular default `mise:latest` should resolve to the same image as `mise:base`.
