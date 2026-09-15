@@ -24,7 +24,7 @@ class WorkProfileTests(unittest.TestCase):
         self.assertEqual("work", work["env"]["FNOX_PROFILE"])
         self.assertEqual("true", work["env"]["FNOX_NO_DEFAULTS"])
         self.assertEqual("leadforensics.ghe.com", work["env"]["GH_HOST"])
-        for tool in ("acli", "npm:mcp-remote"):
+        for tool in ("acli", "pipx:mcp-atlassian"):
             self.assertIn(tool, work["tools"])
         for entry in work["dotfiles"].values():
             self.assertTrue((ROOT / entry["source"]).exists())
@@ -172,6 +172,11 @@ print('read-ok')
                     "ATLASSIAN_API_TOKEN": "unit-token",
                     "ATLASSIAN_EMAIL": "test@example.com",
                     "ATLASSIAN_BASE_URL": "https://example.atlassian.net/",
+                    "TRANSPORT": "streamable-http",
+                    "ATLASSIAN_OAUTH_ENABLE": "true",
+                    "JIRA_OAUTH_ACCESS_TOKEN": "unrelated",
+                    "JIRA_PERSONAL_TOKEN": "unrelated",
+                    "MCP_LOGGING_STDOUT": "true",
                 }
                 run = subprocess.run(
                     [
@@ -194,13 +199,19 @@ print('read-ok')
 
     def test_mcp_auth_is_only_in_environment(self):
         with tempfile.TemporaryDirectory() as tmp:
-            fake = Path(tmp) / "mcp-remote"
+            fake = Path(tmp) / "mcp-atlassian"
             fake.write_text(f"""#!{sys.executable}
-import os,sys,base64
-assert os.environ['ATLASSIAN_MCP_AUTH'] == 'Basic ' + base64.b64encode(b'test@example.com:unit-token').decode()
-assert 'Authorization:${{ATLASSIAN_MCP_AUTH}}' in sys.argv
-assert 'https://mcp.atlassian.com/v2/mcp' in sys.argv
-assert 'unit-token' not in ' '.join(sys.argv)
+import os,sys
+assert os.environ['JIRA_URL'] == 'https://example.atlassian.net'
+assert os.environ['CONFLUENCE_URL'] == 'https://example.atlassian.net/wiki'
+for product in ['JIRA','CONFLUENCE']:
+ assert os.environ[product+'_API_TOKEN'] == 'unit-token'
+ assert os.environ[product+'_USERNAME'] == 'test@example.com'
+assert sys.argv[1:] == ['--transport','stdio','--env-file','/dev/null']
+assert 'ATLASSIAN_OAUTH_ENABLE' not in os.environ
+assert 'JIRA_OAUTH_ACCESS_TOKEN' not in os.environ
+assert 'JIRA_PERSONAL_TOKEN' not in os.environ
+assert os.environ['MCP_LOGGING_STDOUT'] == 'false'
 print('mcp-ok')
 """)
             fake.chmod(0o755)
@@ -209,6 +220,12 @@ print('mcp-ok')
                 "PATH": tmp + os.pathsep + os.environ["PATH"],
                 "ATLASSIAN_API_TOKEN": "unit-token",
                 "ATLASSIAN_EMAIL": "test@example.com",
+                "ATLASSIAN_BASE_URL": "https://example.atlassian.net/",
+                "TRANSPORT": "streamable-http",
+                "ATLASSIAN_OAUTH_ENABLE": "true",
+                "JIRA_OAUTH_ACCESS_TOKEN": "unrelated",
+                "JIRA_PERSONAL_TOKEN": "unrelated",
+                "MCP_LOGGING_STDOUT": "true",
             }
             run = subprocess.run(
                 [sys.executable, str(ROOT / "scripts/atlassian-mcp")],

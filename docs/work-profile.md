@@ -24,6 +24,8 @@ This prevents this checkout's personal `fnox.toml` from overriding work auth.
 hard error if its credential is unavailable. The work token uses `GH_TOKEN`,
 which GitHub CLI prefers to `GITHUB_TOKEN` for `*.ghe.com`. The personal token
 remains available as `MISE_GITHUB_TOKEN` for public GitHub downloads.
+Use `--hostname leadforensics.ghe.com` for auth status: the unqualified
+command also tries the work token against github.com and can exit nonzero.
 
 The image contains references, tools and client configuration. The named
 Modal `1password` secret supplies `OP_SERVICE_ACCOUNT_TOKEN` at runtime.
@@ -46,11 +48,13 @@ Each invocation authenticates anew, so rotation takes effect without image
 rebuilds. Other ACLI product commands retain their standard authentication.
 
 Both agent clients register `atlassian` as a stdio server backed by pinned
-`mcp-remote`, connecting to Atlassian's official `https://mcp.atlassian.com/v2/mcp`.
-The launcher computes Basic auth in memory from the existing email/API token;
-the adapter receives a literal environment-variable header reference, never a
-token in arguments or client configuration. The organization must permit API
-token authentication and the token must allow the requested operations.
+[mcp-atlassian](https://github.com/sooperset/mcp-atlassian), a community server
+for Jira and Confluence. The launcher maps existing fnox variables to its
+runtime environment; no token appears in arguments or client configuration.
+The official remote MCP endpoint accepted initialization but rejected actual
+reads with the current token because its required scope claim is missing.
+The community server uses the already-working Jira/Confluence API token.
+No credential or Atlassian organization setting changes are required.
 
 For a manual MCP client, use this command and arguments:
 
@@ -70,4 +74,4 @@ Reviewed 2026-09-15:
 - [GitHub CLI token/hostname precedence](https://cli.github.com/manual/gh_help_environment)
 - [Official Atlassian MCP authentication](https://atlassian.github.io/atlassian-mcp-server/)
 - [Official ACLI stdin login](https://developer.atlassian.com/cloud/acli/reference/commands/jira-auth-login/)
-- [mcp-remote environment headers](https://github.com/punkpeye/mcp-remote#custom-headers)
+- [MCP Atlassian configuration](https://github.com/sooperset/mcp-atlassian/blob/main/docs/configuration.mdx)

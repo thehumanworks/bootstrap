@@ -1,22 +1,30 @@
 #!/usr/bin/env python3
-"""Connect stdio clients to Atlassian's official MCP using runtime-only auth."""
+"""Adapt work fnox names to MCP Atlassian's runtime environment."""
 
-import base64
 import os
+from urllib.parse import urlsplit
 
-credentials = f"{os.environ['ATLASSIAN_EMAIL']}:{os.environ['ATLASSIAN_API_TOKEN']}"
-os.environ["ATLASSIAN_MCP_AUTH"] = (
-    "Basic " + base64.b64encode(credentials.encode()).decode()
-)
+# A stdio client always uses the fnox API token, even if a parent process
+# configured another Atlassian auth mode or a project has its own .env.
+for key in list(os.environ):
+    if key.startswith(
+        ("ATLASSIAN_OAUTH_", "JIRA_OAUTH_", "CONFLUENCE_OAUTH_")
+    ) or key in (
+        "JIRA_PERSONAL_TOKEN",
+        "CONFLUENCE_PERSONAL_TOKEN",
+        "ATLASSIAN_EXTERNAL_AUTH_ENABLE",
+    ):
+        os.environ.pop(key)
+os.environ["MCP_LOGGING_STDOUT"] = "false"
+
+url = os.environ["ATLASSIAN_BASE_URL"]
+parts = urlsplit(url if "://" in url else "https://" + url)
+site = f"{parts.scheme}://{parts.netloc}"
+for product, endpoint in [("JIRA", site), ("CONFLUENCE", site + "/wiki")]:
+    os.environ[product + "_URL"] = endpoint
+    os.environ[product + "_USERNAME"] = os.environ["ATLASSIAN_EMAIL"]
+    os.environ[product + "_API_TOKEN"] = os.environ["ATLASSIAN_API_TOKEN"]
 os.execvp(
-    "mcp-remote",
-    [
-        "mcp-remote",
-        "https://mcp.atlassian.com/v2/mcp",
-        "--header",
-        "Authorization:${ATLASSIAN_MCP_AUTH}",
-        "--transport",
-        "http-only",
-        "--silent",
-    ],
+    "mcp-atlassian",
+    ["mcp-atlassian", "--transport", "stdio", "--env-file", "/dev/null"],
 )
