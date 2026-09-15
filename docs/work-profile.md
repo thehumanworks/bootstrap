@@ -89,6 +89,11 @@ the shared and work version requests. Refresh both native lockfiles with
 it holds MCP Atlassian's locked Python dependencies. Keep the embedded
 `secret-tools.toml` fnox and 1Password versions aligned with the shared tools.
 
+Bootstrap links both lockfiles and the native dependency bundle beside the
+global config links. This keeps runtime resolution outside the checkout on
+the same locked install identity used during the image build. With this repo
+installed as your global config, use `mise -E work lock --global --bump`.
+
 The sandboxes image launcher is generated with `mise generate install-script`
 from the selected current mise release. Its latest-tools live verifier checks
 all 35 shared tools in both images, both LF-only tools, and the mise binary.

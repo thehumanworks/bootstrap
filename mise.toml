@@ -95,6 +95,10 @@ login_shell = "/bin/bash"
 "~/.config/mise/config.toml" = { source = "mise.toml", mode = "symlink" }
 "~/.config/mise/config.dev.toml" = { source = "mise.dev.toml", mode = "symlink" }
 "~/.config/mise/config.work.toml" = { source = "mise.work.toml", mode = "symlink" }
+# Runtime resolution uses lockfiles beside the global config symlinks.
+"~/.config/mise/mise.lock" = { source = "mise.lock", mode = "symlink" }
+"~/.config/mise/mise.work.lock" = { source = "mise.work.lock", mode = "symlink" }
+"~/.config/mise/.mise/locks" = { source = ".mise/locks", mode = "symlink" }
 # Shared tmux keys, workspaces and optional agent-state reporting (docs/tmux.md).
 "~/.config/tmux/tmux.conf" = { source = "dotfiles/tmux/tmux.conf", mode = "symlink" }
 "~/.local/bin/tw" = { source = "scripts/tmux-workspace", mode = "symlink" }

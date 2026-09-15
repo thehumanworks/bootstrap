@@ -13,6 +13,27 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class WorkProfileTests(unittest.TestCase):
+    def test_global_lockfiles_keep_native_dependency_bundles_reachable(self):
+        common = tomllib.loads((ROOT / "mise.toml").read_text())
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            for name in ("mise.lock", "mise.work.lock", ".mise/locks"):
+                target = f"~/.config/mise/{name}"
+                entry = common["dotfiles"][target]
+                self.assertEqual("symlink", entry["mode"])
+                destination = home / target.removeprefix("~/")
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.symlink_to(ROOT / entry["source"])
+            for name in ("mise.lock", "mise.work.lock"):
+                lock = home / ".config/mise" / name
+                self.assertEqual((ROOT / name).read_bytes(), lock.read_bytes())
+                for entries in tomllib.loads(lock.read_text())["tools"].values():
+                    for entry in entries:
+                        if "uv" in entry:
+                            bundle = lock.parent / entry["uv"]["path"]
+                            for file in ("pyproject.toml", "uv.lock"):
+                                self.assertTrue((bundle / file).is_file())
+
     def test_global_overlays_and_work_clients_are_installed(self):
         common = tomllib.loads((ROOT / "mise.toml").read_text())
         work = tomllib.loads((ROOT / "mise.work.toml").read_text())
