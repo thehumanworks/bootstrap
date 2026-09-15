@@ -146,6 +146,47 @@ print(json.dumps({{'work':os.environ.get('GH_TOKEN')=='work-sentinel','personal'
         self.assertIn("--if-missing error", helper)
         self.assertIn("-- gh auth git-credential", helper)
 
+    def test_public_git_helper_uses_download_token_and_valid_shell_syntax(self):
+        helper = subprocess.check_output(
+            [
+                "/usr/bin/git",
+                "config",
+                "--file",
+                str(ROOT / ".gitconfig.work"),
+                "--get-all",
+                "credential.https://github.com.helper",
+            ],
+            text=True,
+        ).strip()
+        syntax = subprocess.run(
+            ["bash", "-n"],
+            input=helper.removeprefix("!"),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(0, syntax.returncode, syntax.stderr)
+        with tempfile.TemporaryDirectory() as cwd:
+            result = subprocess.run(
+                ["/usr/bin/git", "credential", "fill"],
+                input="protocol=https\nhost=github.com\n\n",
+                cwd=cwd,
+                env={
+                    **os.environ,
+                    "GIT_CONFIG_GLOBAL": str(ROOT / ".gitconfig.work"),
+                    "GIT_CONFIG_NOSYSTEM": "1",
+                    "GIT_TERMINAL_PROMPT": "0",
+                    "MISE_GITHUB_TOKEN": "download-sentinel",
+                    "GH_TOKEN": "work-sentinel",
+                },
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertIn("password=download-sentinel", result.stdout)
+            self.assertNotIn("work-sentinel", result.stdout)
+
     def test_acli_auth_uses_stdin_and_cleans_up_on_success_and_failure(self):
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)

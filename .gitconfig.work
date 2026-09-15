@@ -18,4 +18,4 @@
   helper = !fnox run --profile work-github --no-defaults --if-missing error --non-interactive -- gh auth git-credential
 [credential "https://github.com"]
   helper =
-  helper = !f() { echo username=x-access-token; echo "password=$MISE_GITHUB_TOKEN"; }; f
+  helper = "!f() { echo username=x-access-token; echo \"password=$MISE_GITHUB_TOKEN\"; }; f"
