@@ -1,3 +1,7 @@
+[env]
+FNOX_PROFILE = "default"
+FNOX_NO_DEFAULTS = "false"
+
 [dotfiles]
 "~/.config/fnox/config.toml" = { source = "fnox.toml", mode = "symlink" }
 "~/.gitconfig" = { source = ".gitconfig", mode = "copy" }

@@ -1,14 +1,14 @@
 # Replaces /root/.config/fnox/config.toml. op:// references resolve at shell
 # start via the fnox activation block; sandboxes need the 1password Modal
 # secret (OP_SERVICE_ACCOUNT_TOKEN).
+[profiles.work]
 default_provider = "op"
+inherits = ["work-github", "work-atlassian"]
 
 [providers.op]
 type = "1password"
 
-[secrets]
-# LeadForensics github token. Hostname: leadforensics.ghe.com
-GITHUB_TOKEN = { provider = "op", value = "op://vault/github/leadforensics/token" }
+[profiles.work.secrets]
 # Github PAT token to prevent rate limiting when using mise to download github packages
 MISE_GITHUB_TOKEN = { provider = "op", value = "op://vault/github/token" }
 TAILSCALE_AUTHKEY = { provider = "op", value = "op://vault/tailscale/authkey" }
@@ -19,7 +19,14 @@ AIPROXY_BASE_URL = { provider = "op", value = "op://vault/aiproxy/api/url" }
 AIPROXY_API_KEY = { provider = "op", value = "op://vault/aiproxy/api/key" }
 OPENROUTER_API_KEY = { provider = "op", value = "op://vault/openrouter/api/key" }
 OPENROUTER_BASE_URL = { provider = "op", value = "op://vault/openrouter/api/url" }
+SWARMIA_API_TOKEN = { provider = "op", value = "op://vault/swarmia/api/token" }
+
 # Atlassian credentials for API / MCP use.
+[profiles.work-atlassian.secrets]
 ATLASSIAN_API_TOKEN = { provider = "op", value = "op://vault/atlassian/api/token" }
 ATLASSIAN_BASE_URL = { provider = "op", value = "op://vault/atlassian/api/url" }
 ATLASSIAN_EMAIL = { provider = "op", value = "op://vault/atlassian/email" }
+
+# Resolve only this credential for gh; unrelated services cannot block GitHub.
+[profiles.work-github.secrets]
+GH_TOKEN = { provider = "op", value = "op://vault/github/leadforensics/token" }
