@@ -1,51 +1,51 @@
 [tools]
 # Language Runtimes
-python = "3.14.7"
-node = "26.8.2"
-bun = "1.4.2"
-deno = "2.9.6"
-go = "1.27.1"
-rust = "1.98.1"
-uv = "0.12.15"
-pnpm = "12.4.2"
-yarn = "4.18.0"
-"npm:corepack" = "0.36.0"
-shfmt = "3.14.1"
-ruff = "0.16.7"
-jq = "1.8.2"
-shellcheck = "0.11.0"
-taplo = "0.10.0"
-git-lfs = "3.8.0"
+python = "latest"
+node = "latest"
+bun = "latest"
+deno = "latest"
+go = "latest"
+rust = "latest"
+uv = "latest"
+pnpm = "latest"
+yarn = "latest"
+"npm:corepack" = "latest"
+shfmt = "latest"
+ruff = "latest"
+jq = "latest"
+shellcheck = "latest"
+taplo = "latest"
+git-lfs = "latest"
 # Secret Management
-fnox = "1.35.2"
-age = "1.3.2"
-1password = "2.39.0"
-doppler = "3.76.5"
+fnox = "latest"
+age = "latest"
+1password = "latest"
+doppler = "latest"
 # Dev Tools
-tmux = "3.7c"
-herdr = "0.9.0"
-gh = "2.100.0"
-just = "1.58.0"
-yq = "4.53.6"
-fd = "10.5.0"
-neovim = "0.12.5"
-ripgrep = "15.2.0"
-fzf = "0.74.4"
-bat = "0.26.1"
-eza = "0.23.5"
+tmux = "latest"
+herdr = "latest"
+gh = "latest"
+just = "latest"
+yq = "latest"
+fd = "latest"
+neovim = "latest"
+ripgrep = "latest"
+fzf = "latest"
+bat = "latest"
+eza = "latest"
 # Agent Harnesses
-"npm:@openai/codex" = "0.154.0"
+"npm:@openai/codex" = "latest"
 # tny <= 0.4.0 ships *.provenance.json release assets that are SDK metadata,
 # not sigstore attestations; an old mise once recorded one as provenance.slsa
 # in mise.lock, tripping the provenance-downgrade guard on upgrades. If that
 # recurs, delete the tny provenance block from mise.lock. tny releases after
 # 0.4.0 carry real GitHub build attestations.
-"github:thehumanworks/tny" = "0.11.1"
+"github:thehumanworks/tny" = "latest"
 # Ships both `tailscale` and `tailscaled` on Linux; only the CLI exists on macOS.
-"aqua:tailscale/tailscale" = { version = "1.102.4", os = ["linux"] }
+"aqua:tailscale/tailscale" = { version = "latest", os = ["linux"] }
 
 [tools."http:claude"]
-version = "2.1.272"
+version = "latest"
 url = 'https://downloads.claude.ai/claude-code-releases/{{ version }}/{{ os(macos="darwin") }}-{{ arch() }}/claude'
 version_list_url = "https://downloads.claude.ai/claude-code-releases/latest"
 checksum_url = "https://downloads.claude.ai/claude-code-releases/{{ version }}/manifest.json"
@@ -119,8 +119,8 @@ login_shell = "/bin/bash"
 "~/.codex/config.toml" = { source = "dotfiles/codex/config.toml", mode = "copy" }
 "~/.config/mise/conf.d/secret-tools.toml" = { content = '''
 [tools]
-fnox = "1.35.2"
-1password = "2.39.0"
+fnox = "latest"
+1password = "latest"
 ''' }
 "~/.bashrc/fnox" = { block = 'eval "$(mise exec -- fnox activate bash)"' }
 "~/.bash_profile/fnox" = { block = 'eval "$(mise exec -- fnox activate bash)"' }
@@ -188,6 +188,16 @@ tailscale --socket="$socket" ip -4
 description = "Bootstrap contract tests"
 dir = "{{ config_root }}"
 run = "python -m unittest discover -s tests -v"
+
+[tasks."cua:setup"]
+description = "Install pinned local Cua-S1 model, MLX runner and macOS driver"
+dir = "{{ config_root }}"
+run = "bash scripts/setup-cua-local.sh"
+
+[tasks."cua:demo"]
+description = "Run a verified local Cua-S1 browser demonstration"
+dir = "{{ config_root }}"
+run = "bash scripts/cua-local demo"
 
 [tasks."keyboard:setup"]
 description = "Install and enable Caps Lock Hyper on a Linux desktop"

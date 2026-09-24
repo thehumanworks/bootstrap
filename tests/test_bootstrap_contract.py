@@ -89,11 +89,23 @@ class BootstrapContractTests(unittest.TestCase):
                 self.assertIn("$HOME/.local/lib/tmux/" + name, script)
                 self.assertTrue((REPOSITORY / "scripts" / name).is_file())
 
-    def test_package_managers_and_json_tools_are_pinned(self) -> None:
-        tools = self.parsed["tools"]
+    def test_all_mise_tools_select_latest(self) -> None:
+        configs = [
+            self.parsed,
+            tomllib.loads((REPOSITORY / "mise.work.toml").read_text(encoding="utf-8")),
+            tomllib.loads(
+                self.parsed["dotfiles"]["~/.config/mise/conf.d/secret-tools.toml"][
+                    "content"
+                ]
+            ),
+        ]
+        for config in configs:
+            for name, tool in config["tools"].items():
+                with self.subTest(name=name):
+                    version = tool if isinstance(tool, str) else tool["version"]
+                    self.assertEqual("latest", version)
         for name in PACKAGE_MANAGER_TOOLS + JSON_TOOLS:
-            self.assertIn(name, tools)
-            self.assertTrue(str(tools[name]).strip())
+            self.assertIn(name, self.parsed["tools"])
 
     def test_global_claude_md_is_symlinked_from_the_checkout(self) -> None:
         self.assertRegex(

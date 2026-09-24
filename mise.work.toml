@@ -11,8 +11,8 @@ FNOX_NO_DEFAULTS = "true"
 "~/.claude.json" = { source = "dotfiles/claude/.claude.work.json", mode = "copy" }
 
 [tools]
-acli = "1.3.36-stable"
-"pipx:mcp-atlassian" = "0.23.1"
+acli = "latest"
+"pipx:mcp-atlassian" = "latest"
 
 # Fail closed on work auth; do not resolve unrelated AI/Atlassian secrets.
 [wrappers.gh]
